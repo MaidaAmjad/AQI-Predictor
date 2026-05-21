@@ -1,0 +1,27 @@
+# Windows install (avoids pyjks/twofish C++ build):
+#   pip install hopsworks --no-deps
+#   pip install -r requirements-windows.txt
+
+pandas
+numpy
+requests
+scikit-learn
+streamlit
+python-dotenv
+matplotlib
+joblib
+pyhumps==1.6.1
+avro==1.12.0
+fsspec<2025.12.0
+grpcio>=1.49.1,<2.0.0
+protobuf>=4.25.4,<5.0.0
+hopsworks-apigen>=1.0.4,<2.0.0
+hopsworks_aiomysql[sa]==0.2.2
+opensearch-py>=1.1.0,<=2.4.2
+furl
+boto3
+mock
+tzlocal
+retrying
+tqdm
+PyMySQL[rsa]

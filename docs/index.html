@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AQI-Predictor — Project Documentation</title>
+  <style>
+    :root {
+      --bg: #07090f;
+      --surface: #0d1120;
+      --surface2: #111826;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #d8e2f5;
+      --muted: #5e7292;
+      --accent: #00e0aa;
+      --accent2: #4f8ef7;
+      --warn: #f5c518;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2rem;
+      margin-bottom: 2.5rem;
+    }
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+    h1 span { color: var(--accent); }
+    .subtitle { color: var(--muted); font-size: 1.05rem; max-width: 720px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .badge {
+      font-size: 0.72rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    nav.toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    nav.toc h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.75rem; }
+    nav.toc ol { padding-left: 1.25rem; }
+    nav.toc a { color: var(--accent); text-decoration: none; }
+    nav.toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; color: var(--text); }
+    h4 { font-size: 0.95rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+    p { margin-bottom: 0.85rem; color: #b8c5dc; }
+    ul, ol { margin: 0 0 1rem 1.25rem; color: #b8c5dc; }
+    li { margin-bottom: 0.35rem; }
+    code, .path {
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 0.88em;
+      background: var(--surface2);
+      padding: 0.15rem 0.45rem;
+      border-radius: 5px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 1rem 0;
+      color: #9eb4d4;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+    }
+    .card h4 { margin: 0 0 0.4rem; color: var(--accent); font-size: 1rem; }
+    .card p { margin: 0; font-size: 0.88rem; }
+    .flow {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #8fa8c8;
+      white-space: pre;
+    }
+    .diagram {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin: 1.25rem 0;
+    }
+    .node {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.65rem 1rem;
+      font-size: 0.85rem;
+      text-align: center;
+      min-width: 120px;
+    }
+    .node.primary { border-color: rgba(0, 224, 170, 0.35); color: var(--accent); }
+    .node.api { border-color: rgba(79, 142, 247, 0.35); color: var(--accent2); }
+    .arrow { color: var(--muted); font-size: 1.2rem; }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    @media print {
+      body { background: #fff; color: #111; }
+      .flow, pre { border-color: #ccc; background: #f5f5f5; color: #333; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>AQI<span>Predict</span> — Lahore</h1>
+      <p class="subtitle">
+        End-to-end air quality monitoring and forecasting system. Ingests live and historical
+        pollution data from Open-Meteo, stores engineered features in Hopsworks Feature Store,
+        trains regression models, and serves predictions through an interactive Streamlit dashboard.
+      </p>
+      <div class="badge-row">
+        <span class="badge">Python 3</span>
+        <span class="badge">Streamlit</span>
+        <span class="badge">Hopsworks</span>
+        <span class="badge">scikit-learn</span>
+        <span class="badge">Open-Meteo</span>
+      </div>
+    </header>
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#overview">Project overview</a></li>
+        <li><a href="#structure">Repository structure</a></li>
+        <li><a href="#architecture">System architecture</a></li>
+        <li><a href="#flow">Project flow (pipelines)</a></li>
+        <li><a href="#dashboard">Streamlit dashboard</a></li>
+        <li><a href="#libraries">Libraries &amp; tools</a></li>
+        <li><a href="#hopsworks-deps">Hopsworks dependencies (Windows)</a></li>
+        <li><a href="#env">Environment variables</a></li>
+        <li><a href="#setup">Setup &amp; run</a></li>
+        <li><a href="#data-model">Features &amp; models</a></li>
+      </ol>
+    </nav>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <h2>1. Project overview</h2>
+      <p>
+        <strong>AQI-Predictor</strong> predicts the US Air Quality Index (AQI) for
+        <strong>Lahore, Pakistan</strong> (default coordinates 31.5204°N, 74.3587°E).
+        The system combines three offline Python pipelines with one real-time web application.
+      </p>
+      <div class="card-grid">
+        <div class="card">
+          <h4>Data ingestion</h4>
+          <p>Open-Meteo Air Quality API provides current and hourly historical readings (PM2.5, PM10, gases, AQI).</p>
+        </div>
+        <div class="card">
+          <h4>Feature store</h4>
+          <p>Hopsworks stores versioned feature groups with time-series pollution and calendar features.</p>
+        </div>
+        <div class="card">
+          <h4>ML training</h4>
+          <p>Random Forest and Ridge Regression; best model by R² is saved to Hopsworks Model Registry.</p>
+        </div>
+        <div class="card">
+          <h4>Dashboard</h4>
+          <p>Streamlit UI with 10 views: overview, forecasts, charts, health guidance, and more.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STRUCTURE -->
+    <section id="structure">
+      <h2>2. Repository structure</h2>
+      <pre>
+AQI-Predictor/
+├── app/
+│   └── app/
+│       └── streamlit_app.py    # Interactive dashboard (main user-facing app)
+├── backfill.py                 # One-time / batch historical data load (90 days)
+├── feature_pipeline.py         # Scheduled current AQI → feature store
+├── training_pipeline.py        # Train models from feature store → registry
+├── requirements.txt            # Python dependencies
+├── requirements-windows.txt    # Windows-friendly install (hopsworks without pyjks build)
+├── docs/
+│   └── index.html              # This documentation
+├── .env                        # Secrets & config (not committed)
+└── venv/                       # Local virtual environment
+      </pre>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <h2>3. System architecture</h2>
+      <div class="diagram">
+        <div class="node api">Open-Meteo<br>Air Quality API</div>
+        <span class="arrow">→</span>
+        <div class="node">feature_pipeline.py<br>backfill.py</div>
+        <span class="arrow">→</span>
+        <div class="node primary">Hopsworks<br>Feature Store</div>
+        <span class="arrow">→</span>
+        <div class="node">training_pipeline.py</div>
+        <span class="arrow">→</span>
+        <div class="node primary">Hopsworks<br>Model Registry</div>
+        <span class="arrow">→</span>
+        <div class="node">streamlit_app.py</div>
+      </div>
+      <p>
+        External services: <strong>Open-Meteo</strong> (data source, no API key required),
+        <strong>Hopsworks</strong> hosted at <code>eu-west.cloud.hopsworks.ai</code> (API key + project name required).
+      </p>
+    </section>
+
+    <!-- FLOW -->
+    <section id="flow">
+      <h2>4. Project flow (pipelines)</h2>
+
+      <h3>4.1 End-to-end lifecycle</h3>
+      <div class="flow">┌─────────────────────────────────────────────────────────────────────────────┐
+│                         AQI-PREDICTOR DATA & ML FLOW                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  [1] BACKFILL (run once or when refreshing history)
+      backfill.py
+        │
+        ├─► GET Open-Meteo /v1/air-quality (hourly, last 90 days)
+        ├─► process_historical_data() → DataFrame + aqi_change_rate
+        └─► Hopsworks Feature Group "aqi_features" v2 (insert batch)
+
+  [2] FEATURE PIPELINE (run on schedule / cron)
+      feature_pipeline.py
+        │
+        ├─► GET Open-Meteo current air quality
+        ├─► compute_features() → single row (time, pollutants, AQI)
+        └─► Hopsworks Feature Group insert (incremental)
+
+  [3] TRAINING PIPELINE (run after enough data collected)
+      training_pipeline.py
+        │
+        ├─► Read full feature group from Hopsworks
+        ├─► Train RandomForestRegressor + Ridge
+        ├─► Compare RMSE, MAE, R² → pick best model
+        ├─► joblib.dump → model/{name}.pkl (local)
+        └─► Hopsworks Model Registry "aqi_predictor"
+
+  [4] STREAMLIT APP (continuous / user-facing)
+      streamlit run app/app/streamlit_app.py
+        │
+        ├─► Load model "aqi_predictor" v1 from Model Registry
+        ├─► Read feature group v2 (cached 1 hour)
+        ├─► Fetch live current AQI from Open-Meteo
+        ├─► predict_days() → 7-day forecast
+        └─► Render 10 dashboard pages (Plotly charts)</div>
+
+      <h3>4.2 Pipeline: backfill.py</h3>
+      <table>
+        <tr><th>Step</th><th>Function</th><th>Description</th></tr>
+        <tr><td>1</td><td><code>fetch_historical_aqi()</code></td><td>Requests hourly data from Open-Meteo for the last 90 days.</td></tr>
+        <tr><td>2</td><td><code>process_historical_data()</code></td><td>Builds records with calendar features and <code>aqi_change_rate</code> (delta from previous hour).</td></tr>
+        <tr><td>3</td><td><code>store_in_hopsworks()</code></td><td>Logs into Hopsworks, gets/creates feature group, bulk <code>insert()</code> with Kafka timeout option.</td></tr>
+      </table>
+      <p><strong>Run:</strong> <code>python backfill.py</code></p>
+
+      <h3>4.3 Pipeline: feature_pipeline.py</h3>
+      <table>
+        <tr><th>Step</th><th>Function</th><th>Description</th></tr>
+        <tr><td>1</td><td><code>fetch_aqi_data()</code></td><td>Gets <code>current</code> snapshot from Open-Meteo for configured lat/lon.</td></tr>
+        <tr><td>2</td><td><code>compute_features()</code></td><td>Extracts pollutants, US/EU AQI, hour/day/month/day_of_week.</td></tr>
+        <tr><td>3</td><td><code>store_in_hopsworks()</code></td><td>Appends one row to feature group (default version 1 in pipeline; dashboard uses v2).</td></tr>
+      </table>
+      <p><strong>Run:</strong> <code>python feature_pipeline.py</code></p>
+
+      <h3>4.4 Pipeline: training_pipeline.py</h3>
+      <table>
+        <tr><th>Step</th><th>Function</th><th>Description</th></tr>
+        <tr><td>1</td><td><code>get_features()</code></td><td>Reads feature group version <strong>2</strong> from Hopsworks.</td></tr>
+        <tr><td>2</td><td><code>train_model()</code></td><td>80/20 split; trains Random Forest (100 trees) and Ridge; selects best by R².</td></tr>
+        <tr><td>3</td><td><code>save_model()</code></td><td>Saves <code>.pkl</code> locally and registers <code>aqi_predictor</code> in Model Registry via <code>mr.sklearn.create_model()</code>.</td></tr>
+      </table>
+      <p><strong>Run:</strong> <code>python training_pipeline.py</code></p>
+
+      <h3>4.5 Application: streamlit_app.py</h3>
+      <table>
+        <tr><th>Step</th><th>Function</th><th>Description</th></tr>
+        <tr><td>1</td><td><code>load_model_and_project()</code></td><td>Downloads <code>aqi_predictor</code> v1, loads <code>random_forest.pkl</code> with joblib (cached).</td></tr>
+        <tr><td>2</td><td><code>get_features()</code></td><td>Reads historical features for charts and statistics (TTL 3600s).</td></tr>
+        <tr><td>3</td><td><code>get_current_aqi()</code></td><td>Live Open-Meteo current readings for dashboard header.</td></tr>
+        <tr><td>4</td><td><code>predict_days()</code></td><td>7-day forward predictions using last row’s pollutant values and calendar features.</td></tr>
+      </table>
+      <p><strong>Run:</strong> <code>streamlit run app/app/streamlit_app.py</code></p>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard">
+      <h2>5. Streamlit dashboard</h2>
+      <p>Navigation is a sidebar radio menu. Each page uses <strong>Plotly</strong> for interactive charts (bundled with Streamlit).</p>
+      <table>
+        <tr><th>Page</th><th>Purpose</th></tr>
+        <tr><td>Overview</td><td>Current AQI card, health alert, pollutant metrics, 24h trend, 3-day forecast preview.</td></tr>
+        <tr><td>Hourly AQI</td><td>Hourly averages and time-series visualization.</td></tr>
+        <tr><td>Daily AQI</td><td>Daily aggregates, monthly trends, category distribution pie chart.</td></tr>
+        <tr><td>Forecast</td><td>7-day predicted AQI bar chart, day-by-day breakdown, confidence band.</td></tr>
+        <tr><td>Charts</td><td>AQI by hour of day, day of week, 90-day rolling trend.</td></tr>
+        <tr><td>Pollutants</td><td>PM2.5, PM10, O₃, NO₂, CO, SO₂ levels vs WHO limits.</td></tr>
+        <tr><td>Heatmap</td><td>AQI intensity heatmap over time.</td></tr>
+        <tr><td>Model Stats</td><td>Random Forest vs Ridge metrics comparison.</td></tr>
+        <tr><td>Health Guide</td><td>AQI category health recommendations.</td></tr>
+        <tr><td>Data History</td><td>Raw feature table and export-oriented view.</td></tr>
+      </table>
+      <h3>AQI categories (US AQI)</h3>
+      <table>
+        <tr><th>Range</th><th>Category</th></tr>
+        <tr><td>0–50</td><td>Good</td></tr>
+        <tr><td>51–100</td><td>Moderate</td></tr>
+        <tr><td>101–150</td><td>Unhealthy for Sensitive Groups</td></tr>
+        <tr><td>151–200</td><td>Unhealthy</td></tr>
+        <tr><td>201–300</td><td>Very Unhealthy</td></tr>
+        <tr><td>301+</td><td>Hazardous</td></tr>
+      </table>
+    </section>
+
+    <!-- LIBRARIES -->
+    <section id="libraries">
+      <h2>6. Libraries &amp; tools</h2>
+
+      <h3>6.1 Core Python libraries (requirements.txt)</h3>
+      <table>
+        <tr><th>Library</th><th>Version</th><th>Role in project</th></tr>
+        <tr>
+          <td><strong>pandas</strong></td>
+          <td>latest</td>
+          <td>DataFrames for features, predictions, and dashboard tables; time-series sorting and aggregation.</td>
+        </tr>
+        <tr>
+          <td><strong>numpy</strong></td>
+          <td>latest</td>
+          <td>Numerical operations; RMSE calculation in training pipeline.</td>
+        </tr>
+        <tr>
+          <td><strong>requests</strong></td>
+          <td>latest</td>
+          <td>HTTP client for Open-Meteo Air Quality API (current + historical endpoints).</td>
+        </tr>
+        <tr>
+          <td><strong>scikit-learn</strong></td>
+          <td>latest</td>
+          <td><code>RandomForestRegressor</code>, <code>Ridge</code>, <code>train_test_split</code>, metrics (MSE, MAE, R²).</td>
+        </tr>
+        <tr>
+          <td><strong>hopsworks</strong></td>
+          <td>4.x</td>
+          <td>Feature Store (read/write feature groups), Model Registry (train/deploy models), project login.</td>
+        </tr>
+        <tr>
+          <td><strong>streamlit</strong></td>
+          <td>1.57+</td>
+          <td>Web UI framework: pages, sidebar, metrics, charts, caching (<code>@st.cache_data</code>, <code>@st.cache_resource</code>).</td>
+        </tr>
+        <tr>
+          <td><strong>python-dotenv</strong></td>
+          <td>latest</td>
+          <td>Loads <code>.env</code> for API keys, project name, coordinates, feature group settings.</td>
+        </tr>
+        <tr>
+          <td><strong>matplotlib</strong></td>
+          <td>latest</td>
+          <td>Listed for plotting support (primary viz in app uses Plotly via Streamlit).</td>
+        </tr>
+        <tr>
+          <td><strong>joblib</strong></td>
+          <td>latest</td>
+          <td>Serialize/deserialize trained sklearn models (<code>.pkl</code>) locally and in registry bundle.</td>
+        </tr>
+      </table>
+
+      <h3>6.2 Libraries used by the dashboard (transitive / bundled)</h3>
+      <table>
+        <tr><th>Library</th><th>Role in project</th></tr>
+        <tr><td><strong>plotly</strong></td><td>Interactive bar, line, scatter, and pie charts (<code>plotly.graph_objects</code>).</td></tr>
+        <tr><td><strong>streamlit.components.v1</strong></td><td>Custom HTML/JS for sidebar navigation toggle (Streamlit 1.57 header integration).</td></tr>
+      </table>
+
+      <h3>6.3 External tools &amp; services</h3>
+      <table>
+        <tr><th>Tool / service</th><th>Usage</th></tr>
+        <tr>
+          <td><strong>Open-Meteo Air Quality API</strong></td>
+          <td>
+            Base URL: <code>https://air-quality-api.open-meteo.com/v1/air-quality</code><br>
+            Endpoints: <code>current</code> (live) and <code>hourly</code> (historical). No API key required.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Hopsworks Cloud</strong></td>
+          <td>
+            Host: <code>eu-west.cloud.hopsworks.ai</code><br>
+            Feature group: <code>aqi_features</code> (v2 for training/dashboard)<br>
+            Model registry: <code>aqi_predictor</code> version 1
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Python venv</strong></td>
+          <td>Isolated dependency environment (<code>venv\Scripts\activate</code> on Windows).</td>
+        </tr>
+        <tr>
+          <td><strong>Git</strong></td>
+          <td>Version control; <code>.env</code> and <code>venv/</code> are gitignored.</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- HOPSWORKS DEPS -->
+    <section id="hopsworks-deps">
+      <h2>7. Hopsworks dependencies (Windows)</h2>
+      <p>
+        On Windows, full <code>pip install hopsworks</code> may fail building <strong>twofish</strong> (requires Microsoft C++ Build Tools).
+        Use <code>requirements-windows.txt</code> after <code>pip install hopsworks --no-deps</code>.
+        API-key login does not require <code>pyjks</code>.
+      </p>
+      <table>
+        <tr><th>Package</th><th>Purpose</th></tr>
+        <tr><td>pyhumps</td><td>Case conversion for Hopsworks API payloads.</td></tr>
+        <tr><td>avro</td><td>Avro serialization for feature store records.</td></tr>
+        <tr><td>fsspec</td><td>Filesystem abstraction for data I/O.</td></tr>
+        <tr><td>grpcio / protobuf</td><td>gRPC communication with Hopsworks backend.</td></tr>
+        <tr><td>hopsworks-apigen</td><td>Auto-generated API client bindings.</td></tr>
+        <tr><td>hopsworks_aiomysql</td><td>Async MySQL access to feature store metadata.</td></tr>
+        <tr><td>opensearch-py</td><td>Search/index integration for Hopsworks.</td></tr>
+        <tr><td>boto3</td><td>AWS S3-compatible object storage access.</td></tr>
+        <tr><td>furl</td><td>URL parsing and manipulation.</td></tr>
+        <tr><td>PyMySQL</td><td>MySQL database driver (with RSA support).</td></tr>
+        <tr><td>mock, tzlocal, retrying, tqdm</td><td>Testing utilities, timezones, retries, progress bars.</td></tr>
+      </table>
+    </section>
+
+    <!-- ENV -->
+    <section id="env">
+      <h2>8. Environment variables</h2>
+      <p>Create a <code>.env</code> file in the project root:</p>
+      <table>
+        <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
+        <tr><td>HOPSWORKS_API_KEY</td><td>Yes</td><td>—</td><td>Hopsworks API key for login.</td></tr>
+        <tr><td>HOPSWORKS_PROJECT_NAME</td><td>Yes</td><td>—</td><td>Hopsworks project name.</td></tr>
+        <tr><td>FEATURE_GROUP_NAME</td><td>No</td><td>aqi_features</td><td>Feature group identifier.</td></tr>
+        <tr><td>FEATURE_GROUP_VERSION</td><td>No</td><td>1 (pipelines) / 2 (training & app)</td><td>Feature group version number.</td></tr>
+        <tr><td>LATITUDE</td><td>No</td><td>31.5204</td><td>Monitoring location latitude (Lahore).</td></tr>
+        <tr><td>LONGITUDE</td><td>No</td><td>74.3587</td><td>Monitoring location longitude (Lahore).</td></tr>
+        <tr><td>CITY_NAME</td><td>No</td><td>Lahore</td><td>City label stored with features.</td></tr>
+      </table>
+    </section>
+
+    <!-- SETUP -->
+    <section id="setup">
+      <h2>9. Setup &amp; run</h2>
+      <h3>9.1 Installation (Windows)</h3>
+      <pre>python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install hopsworks --no-deps
+pip install -r requirements-windows.txt</pre>
+
+      <h3>9.2 Installation (Linux / macOS)</h3>
+      <pre>python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt</pre>
+
+      <h3>9.3 Recommended execution order</h3>
+      <ol>
+        <li>Configure <code>.env</code> with Hopsworks credentials.</li>
+        <li><code>python backfill.py</code> — load ~90 days of hourly history.</li>
+        <li><code>python feature_pipeline.py</code> — optional ongoing ingestion.</li>
+        <li><code>python training_pipeline.py</code> — train and register model.</li>
+        <li><code>streamlit run app/app/streamlit_app.py</code> — launch dashboard.</li>
+      </ol>
+      <p>Open the URL shown in the terminal (typically <code>http://localhost:8501</code>).</p>
+    </section>
+
+    <!-- DATA MODEL -->
+    <section id="data-model">
+      <h2>10. Features &amp; models</h2>
+      <h3>10.1 Feature group schema</h3>
+      <table>
+        <tr><th>Feature</th><th>Type</th><th>Description</th></tr>
+        <tr><td>timestamp</td><td>datetime string</td><td>Primary key (with city).</td></tr>
+        <tr><td>city</td><td>string</td><td>Primary key (e.g. Lahore).</td></tr>
+        <tr><td>hour, day, month, day_of_week</td><td>int</td><td>Calendar / cyclical time features.</td></tr>
+        <tr><td>pm2_5, pm10</td><td>float</td><td>Particulate matter (µg/m³).</td></tr>
+        <tr><td>carbon_monoxide</td><td>float</td><td>CO concentration.</td></tr>
+        <tr><td>nitrogen_dioxide</td><td>float</td><td>NO₂ concentration.</td></tr>
+        <tr><td>ozone</td><td>float</td><td>O₃ concentration.</td></tr>
+        <tr><td>sulphur_dioxide</td><td>float</td><td>SO₂ concentration.</td></tr>
+        <tr><td>us_aqi</td><td>float</td><td>Target variable (US AQI index).</td></tr>
+        <tr><td>european_aqi</td><td>float</td><td>European AQI (display only).</td></tr>
+        <tr><td>aqi_change_rate</td><td>float</td><td>Hour-over-hour AQI delta (training feature).</td></tr>
+      </table>
+
+      <h3>10.2 Model training inputs</h3>
+      <p>Training uses these columns as <strong>X</strong> and <code>us_aqi</code> as <strong>y</strong>:</p>
+      <pre>hour, day, month, day_of_week,
+pm2_5, pm10, carbon_monoxide, nitrogen_dioxide, ozone, sulphur_dioxide,
+aqi_change_rate</pre>
+
+      <h3>10.3 Registered models</h3>
+      <table>
+        <tr><th>Algorithm</th><th>Class</th><th>Notes</th></tr>
+        <tr><td>Random Forest</td><td><code>sklearn.ensemble.RandomForestRegressor</code></td><td>100 estimators; typically best R²; saved as <code>random_forest.pkl</code>.</td></tr>
+        <tr><td>Ridge Regression</td><td><code>sklearn.linear_model.Ridge</code></td><td>Linear baseline; compared on same test split.</td></tr>
+      </table>
+    </section>
+
+    <footer>
+      <p>AQI-Predictor documentation — generated for the Lahore air quality forecasting project.</p>
+      <p>Data: <a href="https://open-meteo.com/" style="color: var(--accent2);">Open-Meteo</a> ·
+         Platform: <a href="https://www.hopsworks.ai/" style="color: var(--accent2);">Hopsworks</a> ·
+         UI: <a href="https://streamlit.io/" style="color: var(--accent2);">Streamlit</a></p>
+    </footer>
+  </div>
+</body>
+</html>
