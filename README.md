@@ -2,7 +2,7 @@
 
 Air quality monitoring and 7-day AQI forecasting for Lahore, Pakistan.
 
-**Documentation:** open [`docs/index.html`](docs/index.html) in your browser for full project flow, libraries, and setup guide.
+**Documentation:** open [`docs/index.html`](docs/index.html) for project flow, 5-model training, Overview UI, artifacts, libraries, setup, and troubleshooting.
 
 ## Quick start
 
