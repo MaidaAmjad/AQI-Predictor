@@ -1,13 +1,20 @@
-import hopsworks
-import pandas as pd
-import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import Ridge
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import joblib
+import json
 import os
+
+import hopsworks
+import joblib
+import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
+from sklearn.ensemble import (
+    ExtraTreesRegressor,
+    GradientBoostingRegressor,
+    RandomForestRegressor,
+)
+from sklearn.linear_model import Ridge
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsRegressor
 
 load_dotenv()
 
@@ -20,16 +27,25 @@ FEATURES = [
     "hour", "day", "month", "day_of_week",
     "pm2_5", "pm10", "carbon_monoxide",
     "nitrogen_dioxide", "ozone", "sulphur_dioxide",
-    "aqi_change_rate"
+    "aqi_change_rate",
 ]
 TARGET = "us_aqi"
+
+MODELS = {
+    "random_forest": ("Random Forest", RandomForestRegressor(n_estimators=100, random_state=42)),
+    "ridge": ("Ridge Regression", Ridge()),
+    "gradient_boosting": ("Gradient Boosting", GradientBoostingRegressor(n_estimators=100, random_state=42)),
+    "extra_trees": ("Extra Trees", ExtraTreesRegressor(n_estimators=100, random_state=42)),
+    "knn": ("K-Nearest Neighbors", KNeighborsRegressor(n_neighbors=7)),
+}
+
 
 def get_features():
     print("Connecting to Hopsworks...")
     project = hopsworks.login(
         host="eu-west.cloud.hopsworks.ai",
         api_key_value=HOPSWORKS_API_KEY,
-        project=HOPSWORKS_PROJECT_NAME
+        project=HOPSWORKS_PROJECT_NAME,
     )
     fs = project.get_feature_store()
     fg = fs.get_feature_group(name=FEATURE_GROUP_NAME, version=FEATURE_GROUP_VERSION)
@@ -37,7 +53,24 @@ def get_features():
     df = fg.read()
     return df, project
 
-def train_model(df):
+
+def evaluate_model(estimator, X_train, X_test, y_train, y_test):
+    estimator.fit(X_train, y_train)
+    preds = estimator.predict(X_test)
+    rmse = float(np.sqrt(mean_squared_error(y_test, preds)))
+    mae = float(mean_absolute_error(y_test, preds))
+    r2 = float(r2_score(y_test, preds))
+    return {
+        "rmse": round(rmse, 2),
+        "mae": round(mae, 2),
+        "r2": round(r2, 4),
+        "r2_pct": round(r2 * 100, 1),
+        "estimator": estimator,
+        "predictions": preds,
+    }
+
+
+def train_models(df):
     df = df.dropna()
     X = df[FEATURES]
     y = df[TARGET]
@@ -46,63 +79,89 @@ def train_model(df):
         X, y, test_size=0.2, random_state=42
     )
 
-    print(f"Training on {len(X_train)} samples, testing on {len(X_test)} samples")
+    print(f"Training on {len(X_train)} samples, testing on {len(X_test)} samples\n")
 
-    # Train Random Forest
-    rf = RandomForestRegressor(n_estimators=100, random_state=42)
-    rf.fit(X_train, y_train)
-    rf_preds = rf.predict(X_test)
-    rf_rmse = np.sqrt(mean_squared_error(y_test, rf_preds))
-    rf_mae = mean_absolute_error(y_test, rf_preds)
-    rf_r2 = r2_score(y_test, rf_preds)
-    print(f"Random Forest → RMSE: {rf_rmse:.2f}, MAE: {rf_mae:.2f}, R²: {rf_r2:.2f}")
+    results = {}
+    for key, (display_name, estimator) in MODELS.items():
+        print(f"Training {display_name}...")
+        out = evaluate_model(estimator, X_train, X_test, y_train, y_test)
+        results[key] = {
+            "display_name": display_name,
+            "rmse": out["rmse"],
+            "mae": out["mae"],
+            "r2": out["r2"],
+            "r2_pct": out["r2_pct"],
+            "estimator": out["estimator"],
+            "predictions": out["predictions"],
+        }
+        print(f"  → RMSE: {out['rmse']:.2f}, MAE: {out['mae']:.2f}, R²: {out['r2']:.4f} ({out['r2_pct']:.1f}%)\n")
 
-    # Train Ridge
-    ridge = Ridge()
-    ridge.fit(X_train, y_train)
-    ridge_preds = ridge.predict(X_test)
-    ridge_rmse = np.sqrt(mean_squared_error(y_test, ridge_preds))
-    ridge_mae = mean_absolute_error(y_test, ridge_preds)
-    ridge_r2 = r2_score(y_test, ridge_preds)
-    print(f"Ridge Regression → RMSE: {ridge_rmse:.2f}, MAE: {ridge_mae:.2f}, R²: {ridge_r2:.2f}")
+    best_key = max(results, key=lambda k: results[k]["r2"])
+    best = results[best_key]
+    print(f"Best model: {best['display_name']} (R² = {best['r2']:.4f})")
 
-    # Pick best model
-    if rf_r2 >= ridge_r2:
-        print("Best model: Random Forest")
-        best_model = rf
-        best_name = "random_forest"
-    else:
-        print("Best model: Ridge Regression")
-        best_model = ridge
-        best_name = "ridge"
+    metrics_report = {
+        "best_model": best_key,
+        "best_display_name": best["display_name"],
+        "train_samples": len(X_train),
+        "test_samples": len(X_test),
+        "models": {
+            key: {
+                "display_name": v["display_name"],
+                "rmse": v["rmse"],
+                "mae": v["mae"],
+                "r2": v["r2"],
+                "r2_pct": v["r2_pct"],
+            }
+            for key, v in results.items()
+        },
+        "test_actual": y_test.tolist(),
+        "test_predictions": {key: v["predictions"].tolist() for key, v in results.items()},
+    }
 
-    return best_model, best_name
+    return results[best_key]["estimator"], best_key, metrics_report
 
-def save_model(model, model_name, project):
+
+def save_model(model, model_name, metrics_report, project):
     os.makedirs("model", exist_ok=True)
+
     model_path = f"model/{model_name}.pkl"
     joblib.dump(model, model_path)
+    joblib.dump(model, "model/best_model.pkl")
     print(f"Model saved locally at {model_path}")
 
-    # Save to Hopsworks Model Registry
+    metrics_path = "model/metrics.json"
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(metrics_report, f, indent=2)
+    print(f"Metrics saved at {metrics_path}")
+
+    best_metrics = metrics_report["models"][metrics_report["best_model"]]
     mr = project.get_model_registry()
-    model_dir = "model"
     hw_model = mr.sklearn.create_model(
         name="aqi_predictor",
-        metrics={"rmse": 9.65, "r2": 0.92, "mae": 6.81},
-        description="AQI prediction model for Lahore"
+        metrics={
+            "rmse": best_metrics["rmse"],
+            "r2": best_metrics["r2"],
+            "mae": best_metrics["mae"],
+            "r2_pct": best_metrics["r2_pct"],
+        },
+        description=(
+            f"AQI prediction for Lahore — best model: "
+            f"{metrics_report['best_display_name']} ({metrics_report['best_model']})"
+        ),
     )
-    hw_model.save(model_dir)
+    hw_model.save("model")
     print("Model saved to Hopsworks Model Registry!")
+
 
 if __name__ == "__main__":
     df, project = get_features()
     print(f"Loaded {len(df)} records")
     print(df.head())
 
-    print("\nTraining models...")
-    model, model_name = train_model(df)
+    print("\nTraining 5 models...")
+    model, model_name, metrics_report = train_models(df)
 
-    print("\nSaving model...")
-    save_model(model, model_name, project)
+    print("\nSaving best model and metrics...")
+    save_model(model, model_name, metrics_report, project)
     print("Training pipeline complete!")

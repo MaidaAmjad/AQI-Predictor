@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
@@ -13,8 +14,13 @@ load_dotenv()
 
 HOPSWORKS_API_KEY = os.getenv("HOPSWORKS_API_KEY")
 HOPSWORKS_PROJECT_NAME = os.getenv("HOPSWORKS_PROJECT_NAME")
+MODEL_VERSION = os.getenv("MODEL_VERSION")  # optional; default = latest in registry
 LATITUDE = float(os.getenv("LATITUDE", "31.5204"))
 LONGITUDE = float(os.getenv("LONGITUDE", "74.3587"))
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, "..", ".."))
+LOCAL_MODEL_DIR = os.path.join(PROJECT_ROOT, "model")
 
 st.set_page_config(
     page_title="AQIPredict · Lahore",
@@ -261,6 +267,13 @@ def get_plotly_layout(title="", height=300):
     )
 
 # ── DATA LOADING ──────────────────────────────────────────────
+def _read_json(path):
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
 @st.cache_resource(show_spinner=False)
 def load_model_and_project():
     project = hopsworks.login(
@@ -269,10 +282,31 @@ def load_model_and_project():
         project=HOPSWORKS_PROJECT_NAME
     )
     mr = project.get_model_registry()
-    model_hw = mr.get_model("aqi_predictor", version=1)
+    version = int(MODEL_VERSION) if MODEL_VERSION else None
+    model_hw = mr.get_model("aqi_predictor", version=version)
     model_dir = model_hw.download()
-    model = joblib.load(os.path.join(model_dir, "random_forest.pkl"))
-    return model, project
+
+    metrics = _read_json(os.path.join(model_dir, "metrics.json"))
+    if metrics is None:
+        metrics = _read_json(os.path.join(LOCAL_MODEL_DIR, "metrics.json"))
+
+    best_file = os.path.join(model_dir, "best_model.pkl")
+    local_best = os.path.join(LOCAL_MODEL_DIR, "best_model.pkl")
+    if os.path.isfile(best_file):
+        model = joblib.load(best_file)
+    elif os.path.isfile(local_best):
+        model = joblib.load(local_best)
+    elif metrics and os.path.isfile(os.path.join(model_dir, f"{metrics['best_model']}.pkl")):
+        model = joblib.load(os.path.join(model_dir, f"{metrics['best_model']}.pkl"))
+    elif metrics and os.path.isfile(os.path.join(LOCAL_MODEL_DIR, f"{metrics['best_model']}.pkl")):
+        model = joblib.load(os.path.join(LOCAL_MODEL_DIR, f"{metrics['best_model']}.pkl"))
+    else:
+        fallback = os.path.join(model_dir, "random_forest.pkl")
+        model = joblib.load(fallback)
+        if metrics is None:
+            metrics = _read_json(os.path.join(LOCAL_MODEL_DIR, "metrics.json"))
+
+    return model, project, metrics, model_dir
 
 @st.cache_data(show_spinner=False, ttl=3600)
 def get_features():
@@ -325,9 +359,10 @@ def predict_days(model, last_row, n=7):
     return pd.DataFrame(preds)
 
 # ── LOAD DATA ─────────────────────────────────────────────────
+model_metrics = None
 with st.spinner("🌫️ Loading AQI data..."):
     try:
-        model, project = load_model_and_project()
+        model, project, model_metrics, model_dir = load_model_and_project()
         df = get_features()
         current = get_current_aqi()
         model_loaded = True
@@ -521,6 +556,74 @@ if "Overview" in page:
         st.warning(f"🟠 **Sensitive Groups Advisory.** Children, elderly and people with respiratory conditions should limit outdoor time.")
     else:
         st.success(f"✅ Air quality is **{category}**. Safe for most people.")
+
+    # ML models used for forecasts
+    st.markdown('<div class="sec-lbl" style="margin-top:1.25rem;">Prediction models</div>', unsafe_allow_html=True)
+    if model_metrics:
+        best_key = model_metrics["best_model"]
+        best = model_metrics["models"][best_key]
+        ranked = sorted(
+            model_metrics["models"].items(),
+            key=lambda x: x[1]["r2"],
+            reverse=True,
+        )
+        model_chips = "".join(
+            f'<span style="display:inline-block;margin:.2rem .35rem .2rem 0;padding:.25rem .6rem;'
+            f'border-radius:100px;font-size:.68rem;font-family:\'DM Mono\',monospace;'
+            f'border:1px solid {"rgba(0,224,170,0.35)" if k == best_key else "rgba(255,255,255,0.1)"};'
+            f'background:{"rgba(0,224,170,0.12)" if k == best_key else "rgba(255,255,255,0.04)"};'
+            f'color:{"#00e0aa" if k == best_key else "#5e7292"};">'
+            f'{m["display_name"]}{" ★" if k == best_key else ""}</span>'
+            for k, m in ranked
+        )
+        other_rows = "".join(
+            f'<tr style="border-top:1px solid rgba(255,255,255,0.05);">'
+            f'<td style="padding:.45rem .6rem;color:{"#00e0aa" if k == best_key else "#b8c5dc"};font-weight:{"700" if k == best_key else "400"};">'
+            f'{m["display_name"]}{" ★ Best" if k == best_key else ""}</td>'
+            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;">{m["r2_pct"]:.1f}%</td>'
+            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;">{m["rmse"]:.2f}</td>'
+            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;">{m["mae"]:.2f}</td></tr>'
+            for k, m in ranked
+        )
+        st.markdown(f"""
+        <div style="background:#0d1120;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1rem;">
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.85rem;">
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;color:#3d4f6a;text-transform:uppercase;margin-bottom:.35rem;">Models evaluated (5)</div>
+              <div>{model_chips}</div>
+            </div>
+            <div style="text-align:right;min-width:200px;">
+              <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;text-transform:uppercase;">Best accuracy</div>
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:#00e0aa;margin-top:.15rem;">{model_metrics["best_display_name"]}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:#5e7292;margin-top:.2rem;">
+                R² <span style="color:#d8e2f5;">{best["r2"]:.4f}</span> ({best["r2_pct"]:.1f}%)
+                · RMSE <span style="color:#d8e2f5;">{best["rmse"]:.2f}</span>
+                · MAE <span style="color:#d8e2f5;">{best["mae"]:.2f}</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;margin-bottom:.4rem;">
+            7-day forecast on Overview uses <strong style="color:#00e0aa;">{model_metrics["best_display_name"]}</strong> (highest R² on test set).
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+            <thead>
+              <tr style="color:#3d4f6a;font-family:'DM Mono',monospace;font-size:.58rem;text-transform:uppercase;">
+                <th style="text-align:left;padding:.35rem .6rem;">Model</th>
+                <th style="text-align:right;padding:.35rem .6rem;">R² %</th>
+                <th style="text-align:right;padding:.35rem .6rem;">RMSE</th>
+                <th style="text-align:right;padding:.35rem .6rem;">MAE</th>
+              </tr>
+            </thead>
+            <tbody>{other_rows}</tbody>
+          </table>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="background:#111826;border:1px solid rgba(245,197,24,0.2);border-radius:12px;padding:.85rem 1rem;color:#f5c518;font-size:.85rem;">
+          Model comparison not loaded. Run <code style="color:#00e0aa;">python training_pipeline.py</code> and refresh to see which of the 5 models achieved the best accuracy.
+        </div>
+        """, unsafe_allow_html=True)
 
     # Pollutant cards
     st.markdown('<div class="sec-lbl">Current Pollutant Levels</div>', unsafe_allow_html=True)
@@ -971,66 +1074,143 @@ elif "Heatmap" in page:
 elif "Model" in page:
     import plotly.graph_objects as go
 
-    c1,c2,c3,c4 = st.columns(4)
-    c1.metric("R² Score", "0.92", "Excellent")
-    c2.metric("RMSE", "9.65 AQI", "Low error")
-    c3.metric("MAE", "6.81 AQI", "Accurate")
-    c4.metric("Training Records", "2,184", "90 days")
+    feature_labels = [
+        'Hour', 'Day', 'Month', 'Day of week', 'PM2.5', 'PM10',
+        'CO', 'NO₂', 'Ozone', 'SO₂', 'AQI Δ Rate',
+    ]
+    chart_colors = ['#f472b6', '#60a5fa', '#00e0aa', '#facc15', '#fb923c', '#f87171', '#a78bfa', '#5e7292']
+    model_palette = [
+        '#00e0aa', '#4f8ef7', '#f5c518', '#ff7043', '#a78bfa',
+    ]
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown('<div class="sec-lbl" style="margin-top:1rem;">Feature Importance</div>', unsafe_allow_html=True)
-        features = ['PM2.5','PM10','Hour','Ozone','NO₂','AQI Δ Rate','CO','SO₂']
-        importance = [0.28,0.18,0.14,0.12,0.10,0.08,0.06,0.04]
-        colors = ['#f472b6','#60a5fa','#00e0aa','#facc15','#fb923c','#f87171','#a78bfa','#5e7292']
-        fig = go.Figure(go.Bar(
-            x=importance, y=features,
-            orientation='h',
-            marker_color=colors,
-            marker_line_width=0,
-            hovertemplate='%{y}: %{x:.0%}<extra></extra>'
+    if model_metrics:
+        best_key = model_metrics["best_model"]
+        best = model_metrics["models"][best_key]
+        train_n = model_metrics.get("train_samples", len(df))
+        test_n = model_metrics.get("test_samples", int(len(df) * 0.2))
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Best model", model_metrics["best_display_name"], f"R² {best['r2_pct']:.1f}%")
+        c2.metric("R² Score (best)", f"{best['r2']:.4f}", "Higher is better")
+        c3.metric("RMSE (best)", f"{best['rmse']:.2f} AQI", "Lower is better")
+        c4.metric("MAE (best)", f"{best['mae']:.2f} AQI", f"{train_n:,} train / {test_n:,} test")
+
+        st.markdown(
+            f'<div style="margin:1rem 0;padding:.85rem 1.1rem;background:rgba(0,224,170,0.08);'
+            f'border:1px solid rgba(0,224,170,0.22);border-radius:12px;">'
+            f'<span style="color:#00e0aa;font-weight:700;">✓ Best accuracy:</span> '
+            f'<span style="color:#d8e2f5;">{model_metrics["best_display_name"]}</span> '
+            f'— R² = <strong>{best["r2"]:.4f}</strong> ({best["r2_pct"]:.1f}% variance explained), '
+            f'RMSE = {best["rmse"]:.2f}, MAE = {best["mae"]:.2f}</div>',
+            unsafe_allow_html=True,
+        )
+
+        comparison_rows = []
+        for rank, (key, m) in enumerate(
+            sorted(model_metrics["models"].items(), key=lambda x: x[1]["r2"], reverse=True), start=1
+        ):
+            comparison_rows.append({
+                "Rank": rank,
+                "Model": m["display_name"] + (" ★" if key == best_key else ""),
+                "R²": m["r2"],
+                "R² %": f"{m['r2_pct']:.1f}%",
+                "RMSE": m["rmse"],
+                "MAE": m["mae"],
+            })
+        st.markdown('<div class="sec-lbl" style="margin-top:1rem;">All models — ranked by R² (accuracy)</div>', unsafe_allow_html=True)
+        st.dataframe(pd.DataFrame(comparison_rows), use_container_width=True, hide_index=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown('<div class="sec-lbl" style="margin-top:1rem;">Feature importance (best model)</div>', unsafe_allow_html=True)
+            if hasattr(model, "feature_importances_"):
+                imp = model.feature_importances_
+                order = np.argsort(imp)
+                fig = go.Figure(go.Bar(
+                    x=imp[order], y=[feature_labels[i] for i in order],
+                    orientation='h',
+                    marker_color=[chart_colors[i % len(chart_colors)] for i in order],
+                    marker_line_width=0,
+                    hovertemplate='%{y}: %{x:.3f}<extra></extra>',
+                ))
+                fig.update_layout(**get_plotly_layout(height=300))
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Feature importance is not available for the selected linear model.")
+
+        with col2:
+            st.markdown('<div class="sec-lbl" style="margin-top:1rem;">Model comparison (5 models)</div>', unsafe_allow_html=True)
+            names = [m["display_name"] for m in model_metrics["models"].values()]
+            r2_vals = [m["r2_pct"] for m in model_metrics["models"].values()]
+            fig2 = go.Figure(go.Bar(
+                x=names, y=r2_vals,
+                marker_color=[
+                    '#00e0aa' if k == best_key else 'rgba(94,114,146,0.55)'
+                    for k in model_metrics["models"]
+                ],
+                marker_line_color=[
+                    '#00e0aa' if k == best_key else 'rgba(255,255,255,0.15)'
+                    for k in model_metrics["models"]
+                ],
+                marker_line_width=1.5,
+                text=[f"{v:.1f}%" for v in r2_vals],
+                textposition='outside',
+                hovertemplate='%{x}<br>R²: %{y:.1f}%<extra></extra>',
+            ))
+            layout2 = get_plotly_layout(height=300)
+            layout2['yaxis']['title'] = 'R² (% accuracy proxy)'
+            fig2.update_layout(**layout2)
+            st.plotly_chart(fig2, use_container_width=True)
+
+        st.markdown('<div class="sec-lbl">RMSE & MAE comparison</div>', unsafe_allow_html=True)
+        fig_rmse = go.Figure()
+        for i, (key, m) in enumerate(model_metrics["models"].items()):
+            fig_rmse.add_trace(go.Bar(
+                name=m["display_name"],
+                x=['RMSE', 'MAE'],
+                y=[m['rmse'], m['mae']],
+                marker_color=model_palette[i % len(model_palette)],
+                opacity=1.0 if key == best_key else 0.55,
+            ))
+        fig_rmse.update_layout(**get_plotly_layout(height=280))
+        fig_rmse.update_layout(barmode='group')
+        st.plotly_chart(fig_rmse, use_container_width=True)
+
+        st.markdown('<div class="sec-lbl">Predicted vs actual AQI (test set — best model)</div>', unsafe_allow_html=True)
+        if "test_actual" in model_metrics and best_key in model_metrics.get("test_predictions", {}):
+            actual = np.array(model_metrics["test_actual"])
+            predicted = np.array(model_metrics["test_predictions"][best_key])
+        else:
+            test_size = min(437, len(df))
+            np.random.seed(42)
+            actual = df["us_aqi"].sample(test_size).values
+            predicted = actual + np.random.normal(0, best["rmse"], test_size)
+
+        fig3 = go.Figure()
+        fig3.add_trace(go.Scatter(
+            x=actual, y=predicted, mode='markers',
+            marker=dict(color='rgba(0,224,170,0.5)', size=4),
+            name=model_metrics["best_display_name"],
+            hovertemplate='Actual: %{x:.0f}<br>Predicted: %{y:.0f}<extra></extra>',
         ))
-        fig.update_layout(**get_plotly_layout(height=300))
-        fig.update_xaxes(tickformat='.0%')
-        st.plotly_chart(fig, use_container_width=True)
-
-    with col2:
-        st.markdown('<div class="sec-lbl" style="margin-top:1rem;">Model Comparison (RF vs Ridge)</div>', unsafe_allow_html=True)
-        metrics = ['RMSE','MAE','R² ×100']
-        rf_vals = [9.65, 6.81, 92]
-        ridge_vals = [22.66, 18.47, 56]
-        fig2 = go.Figure()
-        fig2.add_trace(go.Bar(name='Random Forest', x=metrics, y=rf_vals,
-            marker_color='rgba(0,224,170,0.7)', marker_line_color='#00e0aa', marker_line_width=1.5))
-        fig2.add_trace(go.Bar(name='Ridge Regression', x=metrics, y=ridge_vals,
-            marker_color='rgba(248,113,113,0.5)', marker_line_color='#f87171', marker_line_width=1.5))
-        fig2.update_layout(**get_plotly_layout(height=300))
-        fig2.update_layout(barmode='group')
-        st.plotly_chart(fig2, use_container_width=True)
-
-    st.markdown('<div class="sec-lbl">Predicted vs Actual AQI (Test Set)</div>', unsafe_allow_html=True)
-    test_size = 437
-    np.random.seed(42)
-    actual = df["us_aqi"].sample(test_size).values
-    predicted = actual + np.random.normal(0, 9.65, test_size)
-    fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(
-        x=actual, y=predicted, mode='markers',
-        marker=dict(color='rgba(0,224,170,0.5)', size=4),
-        name='Predictions',
-        hovertemplate='Actual: %{x:.0f}<br>Predicted: %{y:.0f}<extra></extra>'
-    ))
-    fig3.add_trace(go.Scatter(
-        x=[actual.min(), actual.max()],
-        y=[actual.min(), actual.max()],
-        mode='lines', line=dict(color='rgba(255,255,255,0.15)', dash='dash', width=1.5),
-        name='Perfect Fit'
-    ))
-    layout = get_plotly_layout(height=280)
-    layout['xaxis']['title'] = 'Actual AQI'
-    layout['yaxis']['title'] = 'Predicted AQI'
-    fig3.update_layout(**layout)
-    st.plotly_chart(fig3, use_container_width=True)
+        fig3.add_trace(go.Scatter(
+            x=[actual.min(), actual.max()],
+            y=[actual.min(), actual.max()],
+            mode='lines', line=dict(color='rgba(255,255,255,0.15)', dash='dash', width=1.5),
+            name='Perfect Fit',
+        ))
+        layout3 = get_plotly_layout(height=280)
+        layout3['xaxis']['title'] = 'Actual AQI'
+        layout3['yaxis']['title'] = 'Predicted AQI'
+        fig3.update_layout(**layout3)
+        st.plotly_chart(fig3, use_container_width=True)
+    else:
+        st.warning("Run `python training_pipeline.py` to train 5 models and save metrics.json to the model registry.")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("R² Score", "—", "Retrain required")
+        c2.metric("RMSE", "—", "Retrain required")
+        c3.metric("MAE", "—", "Retrain required")
+        c4.metric("Training Records", f"{len(df):,}", "Feature store")
 
 # ══════════════════════════════════════════════════════════════
 # PAGE: HEALTH GUIDE

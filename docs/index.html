@@ -224,7 +224,7 @@
         </div>
         <div class="card">
           <h4>ML training</h4>
-          <p>Random Forest and Ridge Regression; best model by R² is saved to Hopsworks Model Registry.</p>
+          <p>Five regressors (Random Forest, Ridge, Gradient Boosting, Extra Trees, KNN); best by R² is saved to Hopsworks Model Registry.</p>
         </div>
         <div class="card">
           <h4>Dashboard</h4>
@@ -302,9 +302,9 @@ AQI-Predictor/
       training_pipeline.py
         │
         ├─► Read full feature group from Hopsworks
-        ├─► Train RandomForestRegressor + Ridge
+        ├─► Train 5 models (RF, Ridge, GBR, Extra Trees, KNN)
         ├─► Compare RMSE, MAE, R² → pick best model
-        ├─► joblib.dump → model/{name}.pkl (local)
+        ├─► joblib.dump → model/best_model.pkl + metrics.json
         └─► Hopsworks Model Registry "aqi_predictor"
 
   [4] STREAMLIT APP (continuous / user-facing)
@@ -338,15 +338,15 @@ AQI-Predictor/
       <table>
         <tr><th>Step</th><th>Function</th><th>Description</th></tr>
         <tr><td>1</td><td><code>get_features()</code></td><td>Reads feature group version <strong>2</strong> from Hopsworks.</td></tr>
-        <tr><td>2</td><td><code>train_model()</code></td><td>80/20 split; trains Random Forest (100 trees) and Ridge; selects best by R².</td></tr>
-        <tr><td>3</td><td><code>save_model()</code></td><td>Saves <code>.pkl</code> locally and registers <code>aqi_predictor</code> in Model Registry via <code>mr.sklearn.create_model()</code>.</td></tr>
+        <tr><td>2</td><td><code>train_models()</code></td><td>80/20 split; trains 5 sklearn models; ranks by R²; saves comparison metrics.</td></tr>
+        <tr><td>3</td><td><code>save_model()</code></td><td>Saves best <code>.pkl</code>, <code>metrics.json</code>, and registers <code>aqi_predictor</code> in Model Registry.</td></tr>
       </table>
       <p><strong>Run:</strong> <code>python training_pipeline.py</code></p>
 
       <h3>4.5 Application: streamlit_app.py</h3>
       <table>
         <tr><th>Step</th><th>Function</th><th>Description</th></tr>
-        <tr><td>1</td><td><code>load_model_and_project()</code></td><td>Downloads <code>aqi_predictor</code> v1, loads <code>random_forest.pkl</code> with joblib (cached).</td></tr>
+        <tr><td>1</td><td><code>load_model_and_project()</code></td><td>Downloads <code>aqi_predictor</code> v1, loads <code>best_model.pkl</code> and <code>metrics.json</code> (cached).</td></tr>
         <tr><td>2</td><td><code>get_features()</code></td><td>Reads historical features for charts and statistics (TTL 3600s).</td></tr>
         <tr><td>3</td><td><code>get_current_aqi()</code></td><td>Live Open-Meteo current readings for dashboard header.</td></tr>
         <tr><td>4</td><td><code>predict_days()</code></td><td>7-day forward predictions using last row’s pollutant values and calendar features.</td></tr>
@@ -367,7 +367,7 @@ AQI-Predictor/
         <tr><td>Charts</td><td>AQI by hour of day, day of week, 90-day rolling trend.</td></tr>
         <tr><td>Pollutants</td><td>PM2.5, PM10, O₃, NO₂, CO, SO₂ levels vs WHO limits.</td></tr>
         <tr><td>Heatmap</td><td>AQI intensity heatmap over time.</td></tr>
-        <tr><td>Model Stats</td><td>Random Forest vs Ridge metrics comparison.</td></tr>
+        <tr><td>Model Stats</td><td>All 5 models ranked by R²; best model highlighted with live metrics.</td></tr>
         <tr><td>Health Guide</td><td>AQI category health recommendations.</td></tr>
         <tr><td>Data History</td><td>Raw feature table and export-oriented view.</td></tr>
       </table>
@@ -563,12 +563,16 @@ pip install -r requirements.txt</pre>
 pm2_5, pm10, carbon_monoxide, nitrogen_dioxide, ozone, sulphur_dioxide,
 aqi_change_rate</pre>
 
-      <h3>10.3 Registered models</h3>
+      <h3>10.3 Trained models (5 candidates)</h3>
       <table>
         <tr><th>Algorithm</th><th>Class</th><th>Notes</th></tr>
-        <tr><td>Random Forest</td><td><code>sklearn.ensemble.RandomForestRegressor</code></td><td>100 estimators; typically best R²; saved as <code>random_forest.pkl</code>.</td></tr>
-        <tr><td>Ridge Regression</td><td><code>sklearn.linear_model.Ridge</code></td><td>Linear baseline; compared on same test split.</td></tr>
+        <tr><td>Random Forest</td><td><code>RandomForestRegressor</code></td><td>100 trees; ensemble baseline.</td></tr>
+        <tr><td>Ridge Regression</td><td><code>Ridge</code></td><td>Linear regularized baseline.</td></tr>
+        <tr><td>Gradient Boosting</td><td><code>GradientBoostingRegressor</code></td><td>100 stages; sequential boosting.</td></tr>
+        <tr><td>Extra Trees</td><td><code>ExtraTreesRegressor</code></td><td>100 trees; randomized splits.</td></tr>
+        <tr><td>K-Nearest Neighbors</td><td><code>KNeighborsRegressor</code></td><td>k=7; instance-based.</td></tr>
       </table>
+      <p>Best model by highest <strong>R²</strong> on the test set is saved as <code>best_model.pkl</code>; full comparison in <code>metrics.json</code>.</p>
     </section>
 
     <footer>
