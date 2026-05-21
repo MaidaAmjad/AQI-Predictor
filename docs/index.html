@@ -186,6 +186,7 @@
         <span class="badge">Hopsworks</span>
         <span class="badge">scikit-learn</span>
         <span class="badge">Open-Meteo</span>
+        <span class="badge">GitHub Actions</span>
       </div>
     </header>
 
@@ -196,14 +197,15 @@
         <li><a href="#structure">Repository structure</a></li>
         <li><a href="#architecture">System architecture</a></li>
         <li><a href="#flow">Project flow (pipelines)</a></li>
+        <li><a href="#cicd">GitHub Actions CI/CD</a></li>
         <li><a href="#dashboard">Streamlit dashboard</a></li>
         <li><a href="#artifacts">Model artifacts &amp; metrics</a></li>
         <li><a href="#libraries">Libraries &amp; tools</a></li>
-        <li><a href="#troubleshooting">Troubleshooting</a></li>
         <li><a href="#hopsworks-deps">Hopsworks dependencies (Windows)</a></li>
-        <li><a href="#env">Environment variables</a></li>
+        <li><a href="#env">Environment &amp; secrets</a></li>
         <li><a href="#setup">Setup &amp; run</a></li>
         <li><a href="#data-model">Features &amp; models</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
       </ol>
     </nav>
 
@@ -213,7 +215,8 @@
       <p>
         <strong>AQI-Predictor</strong> predicts the US Air Quality Index (AQI) for
         <strong>Lahore, Pakistan</strong> (default coordinates 31.5204°N, 74.3587°E).
-        The system combines three offline Python pipelines with one real-time web application.
+        The system combines three Python pipelines (automated on GitHub Actions), optional one-time backfill,
+        and a real-time Streamlit dashboard.
       </p>
       <div class="card-grid">
         <div class="card">
@@ -231,6 +234,10 @@
         <div class="card">
           <h4>Dashboard</h4>
           <p>Streamlit UI with 10 views: overview, forecasts, charts, health guidance, and more.</p>
+        </div>
+        <div class="card">
+          <h4>CI/CD</h4>
+          <p>GitHub Actions: hourly feature ingestion and daily retraining on <code>ubuntu-latest</code> with Python 3.11.</p>
         </div>
       </div>
     </section>
@@ -250,11 +257,15 @@ AQI-Predictor/
 │   ├── best_model.pkl          # Winning estimator (used for forecasts)
 │   ├── metrics.json            # All 5 models: RMSE, MAE, R², test predictions
 │   └── {model_name}.pkl        # e.g. extra_trees.pkl
-├── requirements.txt            # Python dependencies
+├── .github/
+│   └── workflows/
+│       ├── feature_pipeline.yml   # CI: hourly Open-Meteo → Hopsworks
+│       └── train_pipeline.yml       # CI: daily training → Model Registry
+├── requirements.txt            # Python dependencies (used by Actions on Linux)
 ├── requirements-windows.txt    # Windows-friendly install (hopsworks without pyjks build)
 ├── docs/
 │   └── index.html              # This documentation
-├── .env                        # Secrets & config (not committed)
+├── .env                        # Local secrets (not committed; use GitHub Secrets in CI)
 └── venv/                       # Local virtual environment
       </pre>
     </section>
@@ -265,19 +276,20 @@ AQI-Predictor/
       <div class="diagram">
         <div class="node api">Open-Meteo<br>Air Quality API</div>
         <span class="arrow">→</span>
-        <div class="node">feature_pipeline.py<br>backfill.py</div>
+        <div class="node">feature_pipeline.py<br>(hourly via Actions)</div>
         <span class="arrow">→</span>
         <div class="node primary">Hopsworks<br>Feature Store</div>
         <span class="arrow">→</span>
-        <div class="node">training_pipeline.py</div>
+        <div class="node">training_pipeline.py<br>(daily via Actions)</div>
         <span class="arrow">→</span>
         <div class="node primary">Hopsworks<br>Model Registry</div>
         <span class="arrow">→</span>
-        <div class="node">streamlit_app.py</div>
+        <div class="node">streamlit_app.py<br>(local / hosted)</div>
       </div>
       <p>
-        External services: <strong>Open-Meteo</strong> (data source, no API key required),
-        <strong>Hopsworks</strong> hosted at <code>eu-west.cloud.hopsworks.ai</code> (API key + project name required).
+        External services: <strong>Open-Meteo</strong> (no API key),
+        <strong>Hopsworks</strong> at <code>eu-west.cloud.hopsworks.ai</code> (API key + project),
+        <strong>GitHub Actions</strong> for scheduled pipelines (secrets in the repo settings).
       </p>
     </section>
 
@@ -297,15 +309,15 @@ AQI-Predictor/
         ├─► process_historical_data() → DataFrame + aqi_change_rate
         └─► Hopsworks Feature Group "aqi_features" v2 (insert batch)
 
-  [2] FEATURE PIPELINE (run on schedule / cron)
-      feature_pipeline.py
+  [2] FEATURE PIPELINE (hourly — GitHub Actions or manual)
+      feature_pipeline.yml → feature_pipeline.py
         │
         ├─► GET Open-Meteo current air quality
         ├─► compute_features() → single row (time, pollutants, AQI)
         └─► Hopsworks Feature Group insert (incremental)
 
-  [3] TRAINING PIPELINE (run after enough data collected)
-      training_pipeline.py
+  [3] TRAINING PIPELINE (daily — GitHub Actions or manual)
+      train_pipeline.yml → training_pipeline.py
         │
         ├─► Read full feature group from Hopsworks
         ├─► Train 5 models (RF, Ridge, GBR, Extra Trees, KNN)
@@ -361,12 +373,81 @@ AQI-Predictor/
       <p><strong>Run:</strong> <code>streamlit run app/app/streamlit_app.py</code></p>
     </section>
 
+    <!-- CI/CD -->
+    <section id="cicd">
+      <h2>5. GitHub Actions CI/CD</h2>
+      <p>
+        Production automation lives in <code>.github/workflows/</code>. Workflows use
+        <strong>ubuntu-latest</strong>, <strong>Python 3.11</strong>, and
+        <code>requirements.txt</code> (Linux installs <code>hopsworks</code> without the Windows
+        <code>twofish</code> workaround). Credentials are read from
+        <strong>GitHub repository secrets</strong>, never from committed files.
+      </p>
+
+      <h3>5.1 Workflow summary</h3>
+      <table>
+        <tr><th>File</th><th>Name in Actions UI</th><th>Schedule (UTC)</th><th>Python script</th></tr>
+        <tr>
+          <td><code>feature_pipeline.yml</code></td>
+          <td>Feature Pipeline</td>
+          <td><code>0 * * * *</code> (every hour)</td>
+          <td><code>feature_pipeline.py</code></td>
+        </tr>
+        <tr>
+          <td><code>train_pipeline.yml</code></td>
+          <td>Train Pipeline</td>
+          <td><code>0 6 * * *</code> (daily at 06:00)</td>
+          <td><code>training_pipeline.py</code></td>
+        </tr>
+      </table>
+      <p>Both workflows support <strong>workflow_dispatch</strong> (manual “Run workflow” from the Actions tab).</p>
+
+      <h3>5.2 Pipeline steps (each job)</h3>
+      <ol>
+        <li>Checkout repository (<code>actions/checkout@v4</code>)</li>
+        <li>Set up Python 3.11 with pip cache (<code>actions/setup-python@v5</code>)</li>
+        <li>Upgrade pip and install <code>requirements.txt</code></li>
+        <li>Validate required secrets exist (fail fast with <code>::error::</code> annotations)</li>
+        <li>Run the pipeline script with <code>set -euo pipefail</code></li>
+      </ol>
+      <p>The training workflow also verifies <code>training_pipeline.py</code> exists and prints a summary from <code>model/metrics.json</code> on success.</p>
+
+      <h3>5.3 Required GitHub Secrets</h3>
+      <p>Configure under <strong>Settings → Secrets and variables → Actions → Repository secrets</strong>:</p>
+      <table>
+        <tr><th>Secret</th><th>Required</th><th>Used by</th></tr>
+        <tr><td><code>HOPSWORKS_API_KEY</code></td><td>Yes</td><td>Both workflows</td></tr>
+        <tr><td><code>HOPSWORKS_PROJECT_NAME</code></td><td>Yes</td><td>Both workflows</td></tr>
+        <tr><td><code>FEATURE_GROUP_NAME</code></td><td>No</td><td>Override default <code>aqi_features</code></td></tr>
+        <tr><td><code>FEATURE_GROUP_VERSION</code></td><td>No</td><td>Override feature group version</td></tr>
+        <tr><td><code>LATITUDE</code> / <code>LONGITUDE</code> / <code>CITY_NAME</code></td><td>No</td><td>Location overrides (feature pipeline)</td></tr>
+      </table>
+
+      <h3>5.4 Production practices</h3>
+      <table>
+        <tr><th>Practice</th><th>Implementation</th></tr>
+        <tr><td>Secret management</td><td>Hopsworks keys only in GitHub Secrets / local <code>.env</code></td></tr>
+        <tr><td>Concurrency</td><td>Per-workflow concurrency groups; in-flight jobs are not cancelled</td></tr>
+        <tr><td>Timeouts</td><td>20 min (feature), 60 min (training)</td></tr>
+        <tr><td>Permissions</td><td><code>contents: read</code> only</td></tr>
+        <tr><td>Error handling</td><td>Secret validation before API calls; shell <code>set -euo pipefail</code></td></tr>
+        <tr><td>Script naming</td><td>Uses <code>training_pipeline.py</code> (not <code>train_model.py</code>)</td></tr>
+      </table>
+
+      <h3>5.5 Enabling scheduled runs</h3>
+      <p>
+        Cron schedules run only on the <strong>default branch</strong> after workflows are merged,
+        and only if Actions are enabled for the repository. For forks, scheduled workflows may
+        require approval under repository settings.
+      </p>
+    </section>
+
     <!-- DASHBOARD -->
     <section id="dashboard">
-      <h2>5. Streamlit dashboard</h2>
+      <h2>6. Streamlit dashboard</h2>
       <p>Navigation is a sidebar radio menu. Each page uses <strong>Plotly</strong> for interactive charts (bundled with Streamlit). The app targets <strong>Streamlit 1.57+</strong> on <code>localhost</code> (typical port 8501–8503).</p>
 
-      <h3>5.1 Overview page (main screen)</h3>
+      <h3>6.1 Overview page (main screen)</h3>
       <p>The Overview is the default landing page. It combines live data, ML transparency, and short-range forecasts.</p>
       <table>
         <tr><th>Section</th><th>Content</th></tr>
@@ -404,10 +485,10 @@ AQI-Predictor/
         </tr>
       </table>
 
-      <h3>5.2 All pages</h3>
+      <h3>6.2 All pages</h3>
       <table>
         <tr><th>Page</th><th>Purpose</th></tr>
-        <tr><td>Overview</td><td>Live AQI, next-3-day forecast, 5-model comparison, pollutants, 24h trend (see §5.1).</td></tr>
+        <tr><td>Overview</td><td>Live AQI, next-3-day forecast, 5-model comparison, pollutants, 24h trend (see §6.1).</td></tr>
         <tr><td>Hourly AQI</td><td>Hourly averages and time-series visualization.</td></tr>
         <tr><td>Daily AQI</td><td>Daily aggregates, monthly trends, category distribution pie chart.</td></tr>
         <tr><td>Forecast</td><td>Full 7-day predicted AQI bar chart (Plotly colors via <code>rgba()</code>), day-by-day breakdown, confidence band.</td></tr>
@@ -418,14 +499,14 @@ AQI-Predictor/
         <tr><td>Health Guide</td><td>AQI category health recommendations.</td></tr>
         <tr><td>Data History</td><td>Raw feature table and export-oriented view.</td></tr>
       </table>
-      <h3>5.3 Sidebar &amp; navigation</h3>
+      <h3>6.3 Sidebar &amp; navigation</h3>
       <ul>
         <li>Collapsible sidebar with Lahore location, live AQI snapshot, and 10-page menu.</li>
         <li>Top-left <strong>☰</strong> control reopens the sidebar when collapsed (Streamlit <code>stExpandSidebarButton</code> + custom fallback).</li>
         <li>Run command must use the full path: <code>streamlit run app/app/streamlit_app.py</code> (not <code>.p</code>).</li>
       </ul>
 
-      <h3>5.4 AQI categories (US AQI)</h3>
+      <h3>6.4 AQI categories (US AQI)</h3>
       <table>
         <tr><th>Range</th><th>Category</th></tr>
         <tr><td>0–50</td><td>Good</td></tr>
@@ -439,7 +520,7 @@ AQI-Predictor/
 
     <!-- ARTIFACTS -->
     <section id="artifacts">
-      <h2>6. Model artifacts &amp; metrics</h2>
+      <h2>7. Model artifacts &amp; metrics</h2>
       <p>After <code>python training_pipeline.py</code>, the <code>model/</code> directory contains:</p>
       <table>
         <tr><th>File</th><th>Description</th></tr>
@@ -448,7 +529,7 @@ AQI-Predictor/
         <tr><td><code>metrics.json</code></td><td>JSON report: best model key, per-model RMSE/MAE/R², train/test sizes, test-set predictions.</td></tr>
       </table>
 
-      <h3>6.1 Example benchmark (sample run, 2184 records)</h3>
+      <h3>7.1 Example benchmark (sample run, 2184 records)</h3>
       <p>Models are ranked by <strong>R²</strong> (higher = better accuracy). Typical results:</p>
       <table>
         <tr><th>Rank</th><th>Model</th><th>R²</th><th>R² %</th><th>RMSE</th><th>MAE</th></tr>
@@ -464,7 +545,7 @@ AQI-Predictor/
         (RMSE, R², MAE, R² %) — model name goes in the description field.
       </p>
 
-      <h3>6.2 metrics.json structure</h3>
+      <h3>7.2 metrics.json structure</h3>
       <pre>{
   "best_model": "extra_trees",
   "best_display_name": "Extra Trees",
@@ -481,9 +562,9 @@ AQI-Predictor/
 
     <!-- LIBRARIES -->
     <section id="libraries">
-      <h2>7. Libraries &amp; tools</h2>
+      <h2>8. Libraries &amp; tools</h2>
 
-      <h3>7.1 Core Python libraries (requirements.txt)</h3>
+      <h3>8.1 Core Python libraries (requirements.txt)</h3>
       <table>
         <tr><th>Library</th><th>Version</th><th>Role in project</th></tr>
         <tr>
@@ -533,14 +614,14 @@ AQI-Predictor/
         </tr>
       </table>
 
-      <h3>7.2 Libraries used by the dashboard (transitive / bundled)</h3>
+      <h3>8.2 Libraries used by the dashboard (transitive / bundled)</h3>
       <table>
         <tr><th>Library</th><th>Role in project</th></tr>
         <tr><td><strong>plotly</strong></td><td>Interactive bar, line, scatter, and pie charts (<code>plotly.graph_objects</code>).</td></tr>
         <tr><td><strong>streamlit.components.v1</strong></td><td>Custom HTML/JS for sidebar navigation toggle (Streamlit 1.57 header integration).</td></tr>
       </table>
 
-      <h3>7.3 External tools &amp; services</h3>
+      <h3>8.3 External tools &amp; services</h3>
       <table>
         <tr><th>Tool / service</th><th>Usage</th></tr>
         <tr>
@@ -563,15 +644,19 @@ AQI-Predictor/
           <td>Isolated dependency environment (<code>venv\Scripts\activate</code> on Windows).</td>
         </tr>
         <tr>
+          <td><strong>GitHub Actions</strong></td>
+          <td>CI/CD: <code>feature_pipeline.yml</code> (hourly), <code>train_pipeline.yml</code> (daily). Secrets in repo settings.</td>
+        </tr>
+        <tr>
           <td><strong>Git</strong></td>
-          <td>Version control; <code>.env</code> and <code>venv/</code> are gitignored.</td>
+          <td>Version control; <code>.env</code>, <code>venv/</code>, and <code>*.pkl</code> are gitignored.</td>
         </tr>
       </table>
     </section>
 
     <!-- HOPSWORKS DEPS -->
     <section id="hopsworks-deps">
-      <h2>8. Hopsworks dependencies (Windows)</h2>
+      <h2>9. Hopsworks dependencies (Windows)</h2>
       <p>
         On Windows, full <code>pip install hopsworks</code> may fail building <strong>twofish</strong> (requires Microsoft C++ Build Tools).
         Use <code>requirements-windows.txt</code> after <code>pip install hopsworks --no-deps</code>.
@@ -595,8 +680,9 @@ AQI-Predictor/
 
     <!-- ENV -->
     <section id="env">
-      <h2>9. Environment variables</h2>
-      <p>Create a <code>.env</code> file in the project root:</p>
+      <h2>10. Environment &amp; secrets</h2>
+      <h3>10.1 Local development (<code>.env</code>)</h3>
+      <p>Create a <code>.env</code> file in the project root (never commit it):</p>
       <table>
         <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
         <tr><td>HOPSWORKS_API_KEY</td><td>Yes</td><td>—</td><td>Hopsworks API key for login.</td></tr>
@@ -608,39 +694,54 @@ AQI-Predictor/
         <tr><td>CITY_NAME</td><td>No</td><td>Lahore</td><td>City label stored with features.</td></tr>
         <tr><td>MODEL_VERSION</td><td>No</td><td>latest</td><td>Pin Hopsworks model registry version (integer). Omit to auto-load newest.</td></tr>
       </table>
+
+      <h3>10.2 GitHub Actions (repository secrets)</h3>
+      <p>CI workflows do not read <code>.env</code>. Map the same values to GitHub Secrets (see <a href="#cicd">§5 GitHub Actions CI/CD</a>):</p>
+      <ul>
+        <li><strong>Required:</strong> <code>HOPSWORKS_API_KEY</code>, <code>HOPSWORKS_PROJECT_NAME</code></li>
+        <li><strong>Optional:</strong> <code>FEATURE_GROUP_NAME</code>, <code>FEATURE_GROUP_VERSION</code>, <code>LATITUDE</code>, <code>LONGITUDE</code>, <code>CITY_NAME</code></li>
+      </ul>
     </section>
 
     <!-- SETUP -->
     <section id="setup">
-      <h2>10. Setup &amp; run</h2>
-      <h3>10.1 Installation (Windows)</h3>
+      <h2>11. Setup &amp; run</h2>
+      <h3>11.1 Installation (Windows)</h3>
       <pre>python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install hopsworks --no-deps
 pip install -r requirements-windows.txt</pre>
 
-      <h3>10.2 Installation (Linux / macOS)</h3>
+      <h3>11.2 Installation (Linux / macOS)</h3>
       <pre>python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt</pre>
 
-      <h3>10.3 Recommended execution order</h3>
+      <h3>11.3 Local execution order</h3>
       <ol>
         <li>Configure <code>.env</code> with Hopsworks credentials.</li>
-        <li><code>python backfill.py</code> — load ~90 days of hourly history.</li>
-        <li><code>python feature_pipeline.py</code> — optional ongoing ingestion.</li>
+        <li><code>python backfill.py</code> — load ~90 days of hourly history (one-time).</li>
+        <li><code>python feature_pipeline.py</code> — ingest current AQI (or rely on hourly Actions).</li>
         <li><code>python training_pipeline.py</code> — train 5 models, save <code>metrics.json</code>, upload to registry.</li>
         <li><code>streamlit run app/app/streamlit_app.py</code> — launch dashboard (use full <code>.py</code> extension).</li>
       </ol>
       <pre>.\venv\Scripts\Activate.ps1
 streamlit run app/app/streamlit_app.py</pre>
       <p>Open the URL shown in the terminal (e.g. <code>http://localhost:8501</code> or <code>:8503</code>).</p>
+
+      <h3>11.4 Automated execution (GitHub)</h3>
+      <ol>
+        <li>Push code to GitHub and add repository secrets (§10.2).</li>
+        <li>Merge workflows on the default branch — hourly feature ingestion and daily training run automatically.</li>
+        <li>Optionally trigger <strong>Run workflow</strong> manually from the Actions tab to test.</li>
+        <li>Run Streamlit locally or deploy separately (not included in current workflows).</li>
+      </ol>
     </section>
 
     <!-- DATA MODEL -->
     <section id="data-model">
-      <h2>11. Features &amp; models</h2>
-      <h3>11.1 Feature group schema</h3>
+      <h2>12. Features &amp; models</h2>
+      <h3>12.1 Feature group schema</h3>
       <table>
         <tr><th>Feature</th><th>Type</th><th>Description</th></tr>
         <tr><td>timestamp</td><td>datetime string</td><td>Primary key (with city).</td></tr>
@@ -656,13 +757,13 @@ streamlit run app/app/streamlit_app.py</pre>
         <tr><td>aqi_change_rate</td><td>float</td><td>Hour-over-hour AQI delta (training feature).</td></tr>
       </table>
 
-      <h3>11.2 Model training inputs</h3>
+      <h3>12.2 Model training inputs</h3>
       <p>Training uses these columns as <strong>X</strong> and <code>us_aqi</code> as <strong>y</strong>:</p>
       <pre>hour, day, month, day_of_week,
 pm2_5, pm10, carbon_monoxide, nitrogen_dioxide, ozone, sulphur_dioxide,
 aqi_change_rate</pre>
 
-      <h3>11.3 Trained models (5 candidates)</h3>
+      <h3>12.3 Trained models (5 candidates)</h3>
       <table>
         <tr><th>Algorithm</th><th>Class</th><th>Notes</th></tr>
         <tr><td>Random Forest</td><td><code>RandomForestRegressor</code></td><td>100 trees; ensemble baseline.</td></tr>
@@ -676,9 +777,24 @@ aqi_change_rate</pre>
 
     <!-- TROUBLESHOOTING -->
     <section id="troubleshooting">
-      <h2>12. Troubleshooting</h2>
+      <h2>13. Troubleshooting</h2>
       <table>
         <tr><th>Issue</th><th>Cause</th><th>Fix</th></tr>
+        <tr>
+          <td>GitHub Action fails: secrets not set</td>
+          <td><code>HOPSWORKS_API_KEY</code> or <code>HOPSWORKS_PROJECT_NAME</code> missing.</td>
+          <td>Add both under Settings → Secrets and variables → Actions. Re-run workflow.</td>
+        </tr>
+        <tr>
+          <td>Scheduled workflow never runs</td>
+          <td>Cron only on default branch; Actions disabled; fork approval.</td>
+          <td>Merge to default branch, enable Actions, check repository workflow permissions.</td>
+        </tr>
+        <tr>
+          <td><code>training_pipeline.py</code> not found in CI</td>
+          <td>Wrong script name (<code>train_model.py</code>) or file not in repo.</td>
+          <td>Workflow uses <code>training_pipeline.py</code> at repository root.</td>
+        </tr>
         <tr>
           <td>“Model comparison not loaded” on Overview</td>
           <td>Dashboard loaded an old registry version without <code>metrics.json</code>, or training upload failed.</td>
@@ -716,7 +832,8 @@ aqi_change_rate</pre>
       <p>AQI-Predictor documentation — generated for the Lahore air quality forecasting project.</p>
       <p>Data: <a href="https://open-meteo.com/" style="color: var(--accent2);">Open-Meteo</a> ·
          Platform: <a href="https://www.hopsworks.ai/" style="color: var(--accent2);">Hopsworks</a> ·
-         UI: <a href="https://streamlit.io/" style="color: var(--accent2);">Streamlit</a></p>
+         UI: <a href="https://streamlit.io/" style="color: var(--accent2);">Streamlit</a> ·
+         CI/CD: <a href="https://docs.github.com/en/actions" style="color: var(--accent2);">GitHub Actions</a></p>
     </footer>
   </div>
 </body>
