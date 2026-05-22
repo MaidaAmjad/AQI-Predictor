@@ -3,6 +3,7 @@ numpy
 requests
 scikit-learn
 hopsworks
+confluent-kafka>=2.3.0
 streamlit
 python-dotenv
 matplotlib
