@@ -11,7 +11,7 @@ load_dotenv()
 HOPSWORKS_API_KEY = os.getenv("HOPSWORKS_API_KEY")
 HOPSWORKS_PROJECT_NAME = os.getenv("HOPSWORKS_PROJECT_NAME")
 FEATURE_GROUP_NAME = os.getenv("FEATURE_GROUP_NAME", "aqi_features")
-FEATURE_GROUP_VERSION = int(os.getenv("FEATURE_GROUP_VERSION", "1"))
+FEATURE_GROUP_VERSION = int(os.getenv("FEATURE_GROUP_VERSION", "2"))
 LATITUDE = float(os.getenv("LATITUDE", "31.5204"))
 LONGITUDE = float(os.getenv("LONGITUDE", "74.3587"))
 CITY_NAME = os.getenv("CITY_NAME", "Lahore")
@@ -32,13 +32,13 @@ def fetch_aqi_data():
     response.raise_for_status()
     return response.json()
 
-def compute_features(data):
+def compute_features(data, prev_aqi=None):
     """Compute features from raw API data"""
     now = datetime.now()
     current = data["current"]
 
-    # Calculate AQI change rate (placeholder for first run)
     aqi = current.get("us_aqi", 0) or 0
+    aqi_change_rate = (aqi - prev_aqi) if prev_aqi is not None else 0
 
     features = {
         "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -55,39 +55,54 @@ def compute_features(data):
         "sulphur_dioxide": current.get("sulphur_dioxide", 0) or 0,
         "us_aqi": aqi,
         "european_aqi": current.get("european_aqi", 0) or 0,
+        "aqi_change_rate": aqi_change_rate,
     }
 
     return pd.DataFrame([features])
 
-def store_in_hopsworks(df):
-    """Store features in Hopsworks Feature Store"""
+def connect_feature_group():
+    """Return the AQI feature group (create on first run)."""
     print("Connecting to Hopsworks...")
     project = hopsworks.login(
         host="eu-west.cloud.hopsworks.ai",
         api_key_value=HOPSWORKS_API_KEY,
-        project=HOPSWORKS_PROJECT_NAME
+        project=HOPSWORKS_PROJECT_NAME,
     )
-
     fs = project.get_feature_store()
-
-    fg = fs.get_or_create_feature_group(
+    return fs.get_or_create_feature_group(
         name=FEATURE_GROUP_NAME,
         version=FEATURE_GROUP_VERSION,
         primary_key=["timestamp", "city"],
-        description="AQI features for Lahore from Open-Meteo"
+        description="AQI features for Lahore from Open-Meteo",
     )
 
-    fg.insert(df)
-    print("Features stored successfully!")
+def _last_us_aqi(fg):
+    """Previous US AQI for this city, if the feature group already has rows."""
+    try:
+        existing = fg.read()
+        if existing.empty:
+            return None
+        city_rows = existing[existing["city"] == CITY_NAME]
+        if city_rows.empty:
+            return None
+        return float(city_rows.sort_values("timestamp").iloc[-1]["us_aqi"])
+    except Exception as exc:
+        print(f"Could not read prior AQI (using 0 change rate): {exc}")
+        return None
+
 
 if __name__ == "__main__":
     print("Fetching AQI data from Open-Meteo...")
     raw_data = fetch_aqi_data()
 
+    fg = connect_feature_group()
+    prev_aqi = _last_us_aqi(fg)
+
     print("Computing features...")
-    df = compute_features(raw_data)
+    df = compute_features(raw_data, prev_aqi=prev_aqi)
     print(df)
 
     print("Storing in Hopsworks...")
-    store_in_hopsworks(df)
+    fg.insert(df, write_options={"kafka_timeout": 60})
+    print("Features stored successfully!")
     print("Done!")
