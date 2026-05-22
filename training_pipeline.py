@@ -16,20 +16,14 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
 
+from explainability import FEATURES, TARGET, build_explainability_report
+
 load_dotenv()
 
 HOPSWORKS_API_KEY = os.getenv("HOPSWORKS_API_KEY")
 HOPSWORKS_PROJECT_NAME = os.getenv("HOPSWORKS_PROJECT_NAME")
 FEATURE_GROUP_NAME = os.getenv("FEATURE_GROUP_NAME", "aqi_features")
 FEATURE_GROUP_VERSION = 2
-
-FEATURES = [
-    "hour", "day", "month", "day_of_week",
-    "pm2_5", "pm10", "carbon_monoxide",
-    "nitrogen_dioxide", "ozone", "sulphur_dioxide",
-    "aqi_change_rate",
-]
-TARGET = "us_aqi"
 
 MODELS = {
     "random_forest": ("Random Forest", RandomForestRegressor(n_estimators=100, random_state=42)),
@@ -119,7 +113,8 @@ def train_models(df):
         "test_predictions": {key: v["predictions"].tolist() for key, v in results.items()},
     }
 
-    return results[best_key]["estimator"], best_key, metrics_report
+    best_estimator = results[best_key]["estimator"]
+    return best_estimator, best_key, metrics_report, X_train, X_test
 
 
 def save_model(model, model_name, metrics_report, project):
@@ -160,7 +155,16 @@ if __name__ == "__main__":
     print(df.head())
 
     print("\nTraining 5 models...")
-    model, model_name, metrics_report = train_models(df)
+    model, model_name, metrics_report, X_train, X_test = train_models(df)
+
+    print("\nComputing SHAP and LIME explanations...")
+    try:
+        metrics_report["explainability"] = build_explainability_report(
+            model, X_train, X_test, x_instance=df.dropna().iloc[-1]
+        )
+        print("  → SHAP and LIME summaries saved in metrics.json")
+    except Exception as exc:
+        print(f"  → Explainability skipped: {exc}")
 
     print("\nSaving best model and metrics...")
     save_model(model, model_name, metrics_report, project)

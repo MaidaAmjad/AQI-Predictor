@@ -8,8 +8,12 @@ Air quality monitoring and 7-day AQI forecasting for Lahore, Pakistan.
 
 ```powershell
 .\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install -r requirements-explain.txt
 streamlit run app/app/streamlit_app.py
 ```
+
+If `pip install -r requirements.txt` fails on Windows with a **twofish** / C++ build error, Hopsworks may already be installed — run `pip install -r requirements-explain.txt` only, then continue.
 
 ## GitHub Actions (CI/CD)
 

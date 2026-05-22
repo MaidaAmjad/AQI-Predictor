@@ -2,7 +2,7 @@ pandas
 numpy
 requests
 scikit-learn
-hopsworks
+hopsworks==4.7.5
 confluent-kafka>=2.3.0
 streamlit
 python-dotenv

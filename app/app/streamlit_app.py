@@ -1,5 +1,6 @@
 import html
 import json
+import sys
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
@@ -22,6 +23,8 @@ LONGITUDE = float(os.getenv("LONGITUDE", "74.3587"))
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, "..", ".."))
 LOCAL_MODEL_DIR = os.path.join(PROJECT_ROOT, "model")
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 st.set_page_config(
     page_title="AQIPredict · Lahore",
@@ -257,6 +260,186 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
 @media (max-width: 900px) {
     .forecast-3-grid { grid-template-columns: 1fr; }
 }
+
+/* Overview day cards — original glass cards; invisible click layer on card only */
+.dash-day-wrap {
+    margin-bottom: 0.75rem;
+}
+.dash-day-wrap [data-testid="stHorizontalBlock"] {
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+}
+.dash-day-wrap [data-testid="column"] {
+    position: relative !important;
+    padding: 0 !important;
+}
+.dash-day-wrap [data-testid="column"] [data-testid="stMarkdownContainer"] {
+    margin: 0 !important;
+}
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] {
+    margin-top: 0.5rem !important;
+    width: 100% !important;
+    background: transparent !important;
+}
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] > div,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] > div > div {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] a,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-baseweb="button"],
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button[kind="secondary"],
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button[kind="primary"],
+.dash-day-wrap [data-testid="column"] [data-testid="stBaseButton-secondary"],
+.dash-day-wrap [data-testid="column"] [data-testid="stBaseButton-primary"] {
+    width: 100% !important;
+    min-height: 2.35rem !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0.5rem 0.75rem !important;
+    background: #07090f !important;
+    background-color: #07090f !important;
+    background-image: none !important;
+    color: #d8e2f5 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    font-family: 'Epilogue', sans-serif !important;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.02em !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:hover,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] a:hover,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-baseweb="button"]:hover,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:focus,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] a:focus,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:focus-visible {
+    background: #111826 !important;
+    background-color: #111826 !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:active {
+    background: #0a0d16 !important;
+    background-color: #0a0d16 !important;
+    background-image: none !important;
+}
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button p,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button span,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button div,
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-testid="stMarkdownContainer"],
+.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-testid="stMarkdownContainer"] p {
+    color: #d8e2f5 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    font-size: 0.78rem !important;
+    margin: 0 !important;
+}
+.dash-day-wrap [data-testid="column"]:hover .wx-day-card {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    background: rgba(17, 24, 38, 0.62) !important;
+}
+.wx-day-card {
+    background: rgba(13, 17, 32, 0.52);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 18px;
+    padding: 0.8rem 1rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 7.6rem;
+    transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
+    box-sizing: border-box;
+}
+.wx-day-card--selected {
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    transform: translateY(-1px);
+}
+.wx-day-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.45rem;
+}
+.wx-day-num, .wx-day-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: #5e7292;
+    letter-spacing: 0.02em;
+}
+.wx-day-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+.wx-aqi {
+    font-family: Syne, sans-serif;
+    font-weight: 800;
+    font-size: 2.15rem;
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+.wx-cat {
+    margin-top: 0.2rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.wx-vbar {
+    width: 11px;
+    height: 4.6rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 100px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.25);
+}
+.wx-vbar-fill {
+    width: 100%;
+    border-radius: 100px;
+    min-height: 10px;
+}
+.dash-metric-tabs [data-testid="stRadio"] > div {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+}
+.dash-metric-tabs [data-testid="stRadio"] label {
+    background: #0d1120 !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 100px !important;
+    padding: 0.35rem 0.85rem !important;
+    font-size: 0.75rem !important;
+}
+.dash-metric-tabs [data-testid="stRadio"] label[data-checked="true"],
+.dash-metric-tabs [data-testid="stRadio"] label[aria-checked="true"] {
+    background: rgba(245,197,24,0.15) !important;
+    border-color: rgba(245,197,24,0.45) !important;
+    color: #f5c518 !important;
+}
+.dash-conditions {
+    background: #0d1120;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 1rem 1.15rem;
+    font-size: 0.88rem;
+    color: #8fa3c4;
+    line-height: 1.55;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -295,6 +478,271 @@ def get_plotly_layout(title="", height=300):
         legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.06)'),
         showlegend=True
     )
+
+def get_aqi_category_short(aqi):
+    if aqi <= 50:
+        return "Good"
+    if aqi <= 100:
+        return "Moderate"
+    if aqi <= 150:
+        return "Poor"
+    if aqi <= 200:
+        return "Unhealthy"
+    if aqi <= 300:
+        return "Very unhealthy"
+    return "Hazardous"
+
+OVERVIEW_METRICS = [
+    ("us_aqi", "Air Quality Index"),
+    ("ozone", "O₃"),
+    ("pm2_5", "PM 2.5"),
+    ("pm10", "PM 10"),
+    ("nitrogen_dioxide", "NO₂"),
+    ("carbon_monoxide", "CO"),
+    ("sulphur_dioxide", "SO₂"),
+]
+
+def _build_hourly_slots(day_df, slots, metric):
+    day_df = day_df.sort_values("timestamp")
+    by_hour = day_df.groupby(day_df["timestamp"].dt.hour)[metric].mean()
+    values = [float(by_hour[h]) if h in by_hour.index else np.nan for h in range(24)]
+    out = pd.DataFrame({"timestamp": slots, metric: values})
+    if out[metric].notna().any():
+        out[metric] = out[metric].ffill().bfill()
+    return out
+
+def _forecast_day_aqi(forecast_hourly, day_date):
+    if forecast_hourly is None or forecast_hourly.empty:
+        return None
+    day_slice = forecast_hourly[forecast_hourly["timestamp"].dt.date == day_date]
+    if day_slice.empty or day_slice["us_aqi"].isna().all():
+        return None
+    return int(day_slice["us_aqi"].mean())
+
+def _weather_day_card(day: dict, selected: bool) -> str:
+    """Original glass day card: date, AQI, category, vertical bar."""
+    bar_pct = min(int(day["aqi"]) / 300 * 100, 100)
+    sel = " wx-day-card--selected" if selected else ""
+    glow = hex_to_rgba(day["color"], 0.35)
+    soft_glow = hex_to_rgba(day["color"], 0.14)
+    glow_style = (
+        f"box-shadow: 0 0 28px {glow}, 0 0 48px {soft_glow}, "
+        f"0 6px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);"
+        if selected
+        else (
+            f"box-shadow: 0 0 16px {soft_glow}, 0 4px 20px rgba(0,0,0,0.35), "
+            f"inset 0 1px 0 rgba(255,255,255,0.06);"
+        )
+    )
+    return f"""
+    <div class="wx-day-card{sel}" style="{glow_style}">
+      <div class="wx-day-top">
+        <span class="wx-day-num">{day['day_num']}</span>
+        <span class="wx-day-name">{day['label']}</span>
+      </div>
+      <div class="wx-day-body">
+        <div>
+          <div class="wx-aqi" style="color:{day['color']};">{day['aqi']}</div>
+          <div class="wx-cat" style="color:{day['color']};">{day['category']}</div>
+        </div>
+        <div class="wx-vbar">
+          <div class="wx-vbar-fill" style="height:{bar_pct}%;background:{day['color']};"></div>
+        </div>
+      </div>
+    </div>
+    """
+
+
+def _select_overview_day(day_date):
+    st.session_state.overview_day = day_date
+
+
+def render_day_card_picker(days: list, selected_date) -> None:
+    """Original HTML day cards; click on card updates overview_day and the chart below."""
+    day_cols = st.columns(len(days))
+    for col, day in zip(day_cols, days):
+        with col:
+            is_selected = day["date"] == selected_date
+            st.markdown(_weather_day_card(day, is_selected), unsafe_allow_html=True)
+            st.button(
+                "See Graph ->",
+                key=f"overview_day_{day['date']}",
+                on_click=_select_overview_day,
+                kwargs={"day_date": day["date"]},
+                use_container_width=True,
+                type="secondary",
+            )
+    # Late-loaded overrides beat Streamlit default white secondary button styles
+    st.markdown(
+        """
+        <style>
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button,
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] a,
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] [data-baseweb="button"] {
+            background: #07090f !important;
+            background-color: #07090f !important;
+            color: #d8e2f5 !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        }
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button:hover,
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] a:hover {
+            background: #111826 !important;
+            background-color: #111826 !important;
+            color: #ffffff !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def build_overview_days(df, predictions, current_aqi, forecast_hourly=None):
+    """Four-day strip: today and the next three days."""
+    today = datetime.now().date()
+    days = []
+    for offset in range(0, 4):
+        day_date = today + timedelta(days=offset)
+        label = "Today" if offset == 0 else day_date.strftime("%a")
+
+        day_df = df[df["timestamp"].dt.date == day_date]
+        fc_aqi = _forecast_day_aqi(forecast_hourly, day_date)
+        is_forecast = day_date > today
+
+        if len(day_df) > 0:
+            aqi = int(day_df["us_aqi"].mean())
+            is_forecast = False
+        elif offset == 0:
+            aqi = int(current_aqi)
+            is_forecast = False
+        elif fc_aqi is not None:
+            aqi = fc_aqi
+        elif offset < len(predictions):
+            aqi = int(predictions.iloc[offset]["Predicted AQI"])
+        else:
+            aqi = int(current_aqi)
+
+        days.append({
+            "date": day_date,
+            "day_num": day_date.day,
+            "label": label,
+            "aqi": aqi,
+            "category": get_aqi_category_short(aqi),
+            "color": get_aqi_color(aqi),
+            "is_forecast": is_forecast,
+        })
+    return days
+
+def _hourly_from_forecast(forecast_hourly, day_date, metric):
+    if forecast_hourly is None or forecast_hourly.empty or metric not in forecast_hourly.columns:
+        return None
+    day_slice = forecast_hourly[forecast_hourly["timestamp"].dt.date == day_date]
+    if day_slice.empty:
+        return None
+    start = datetime.combine(day_date, datetime.min.time())
+    slots = pd.date_range(start=start, periods=24, freq="h")
+    return _build_hourly_slots(day_slice, slots, metric)
+
+def hourly_series_for_day(df, day_date, metric, predictions=None, forecast_hourly=None):
+    """Hourly values for one calendar day; future days use Open-Meteo hourly forecast."""
+    today = datetime.now().date()
+    start = datetime.combine(day_date, datetime.min.time())
+    slots = pd.date_range(start=start, periods=24, freq="h")
+
+    day_df = df[df["timestamp"].dt.date == day_date].copy()
+    hist = None
+    if not day_df.empty:
+        hist = _build_hourly_slots(day_df, slots, metric)
+    elif day_date == today and not df.empty:
+        hist = _build_hourly_slots(df.tail(24), slots, metric)
+
+    fc = _hourly_from_forecast(forecast_hourly, day_date, metric)
+
+    if fc is not None and (day_date > today or day_date == today):
+        if hist is not None and hist[metric].notna().any():
+            merged = hist.copy()
+            for i in range(24):
+                if pd.isna(merged[metric].iloc[i]) and pd.notna(fc[metric].iloc[i]):
+                    merged.loc[i, metric] = fc[metric].iloc[i]
+            if merged[metric].notna().any():
+                merged[metric] = merged[metric].ffill().bfill()
+            return merged
+        return fc
+
+    if hist is not None:
+        return hist
+
+    if day_date > today and predictions is not None:
+        offset = (day_date - today).days
+        if 0 <= offset < len(predictions):
+            daily = float(predictions.iloc[offset]["Predicted AQI"])
+        else:
+            daily = float(predictions.iloc[-1]["Predicted AQI"])
+        return pd.DataFrame({
+            "timestamp": slots,
+            metric: [daily] * 24,
+            "_estimated": [True] * 24,
+        })
+
+    return pd.DataFrame({"timestamp": slots, metric: [np.nan] * 24})
+
+def build_day_conditions(df, day_date, hourly_df, metric, predictions, forecast_hourly=None):
+    """Short narrative for the selected day."""
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+    metric_label = dict(OVERVIEW_METRICS).get(metric, metric)
+
+    if metric == "us_aqi":
+        day_avg = int(hourly_df["us_aqi"].mean()) if hourly_df["us_aqi"].notna().any() else None
+        if day_avg is None:
+            return "No air quality data for this day yet."
+        cat = get_aqi_category_short(day_avg).lower()
+        parts = [f"Air quality is **{cat}** (US AQI ~{day_avg})."]
+
+        y_df = df[df["timestamp"].dt.date == yesterday]
+        if day_date == today and len(y_df) > 0:
+            y_avg = int(y_df["us_aqi"].mean())
+            if day_avg < y_avg:
+                parts.insert(0, "Air quality has been better than yesterday so far.")
+            elif day_avg > y_avg:
+                parts.insert(0, "Air quality has been worse than yesterday so far.")
+            else:
+                parts.insert(0, "Air quality is similar to yesterday so far.")
+
+        if len(hourly_df) >= 4 and hourly_df["us_aqi"].notna().sum() >= 4:
+            first_half = hourly_df["us_aqi"].iloc[:12].mean()
+            second_half = hourly_df["us_aqi"].iloc[12:].mean()
+            if second_half > first_half + 8:
+                parts.append("Air quality has a deteriorating trend through the day.")
+            elif second_half < first_half - 8:
+                parts.append("Air quality is improving through the day.")
+
+        pol_cols = ["ozone", "pm2_5", "pm10", "nitrogen_dioxide", "carbon_monoxide", "sulphur_dioxide"]
+        day_pol = df[df["timestamp"].dt.date == day_date]
+        if day_pol.empty and forecast_hourly is not None:
+            day_pol = forecast_hourly[forecast_hourly["timestamp"].dt.date == day_date]
+        if len(day_pol) > 0:
+            means = {c: day_pol[c].mean() for c in pol_cols if c in day_pol.columns}
+            if means:
+                primary = max(means, key=means.get)
+                names = {
+                    "ozone": "O₃",
+                    "pm2_5": "PM2.5",
+                    "pm10": "PM10",
+                    "nitrogen_dioxide": "NO₂",
+                    "carbon_monoxide": "CO",
+                    "sulphur_dioxide": "SO₂",
+                }
+                unit = "µg/m³"
+                parts.append(
+                    f"The primary pollutant is **{names.get(primary, primary)}** "
+                    f"({means[primary]:.0f} {unit})."
+                )
+        return " ".join(parts)
+
+    if hourly_df[metric].notna().any():
+        avg = hourly_df[metric].mean()
+        return f"Average **{metric_label}** for this day: **{avg:.1f}** µg/m³."
+    return f"No **{metric_label}** readings for this day."
 
 # ── DATA LOADING ──────────────────────────────────────────────
 def _read_json(path):
@@ -363,6 +811,56 @@ def get_current_aqi():
     r = requests.get(url, params=params, timeout=10)
     return r.json()["current"]
 
+@st.cache_data(show_spinner=False, ttl=1800)
+def get_hourly_aqi_forecast():
+    """Hourly air-quality forecast (5 days) from Open-Meteo for overview charts."""
+    url = "https://air-quality-api.open-meteo.com/v1/air-quality"
+    params = {
+        "latitude": LATITUDE,
+        "longitude": LONGITUDE,
+        "hourly": [
+            "pm10", "pm2_5", "carbon_monoxide", "nitrogen_dioxide",
+            "ozone", "sulphur_dioxide", "us_aqi", "european_aqi",
+        ],
+        "forecast_days": 5,
+        "timezone": "auto",
+    }
+    r = requests.get(url, params=params, timeout=15)
+    r.raise_for_status()
+    hourly = r.json()["hourly"]
+    out = pd.DataFrame({"timestamp": pd.to_datetime(hourly["time"])})
+    for col in params["hourly"]:
+        out[col] = hourly.get(col, [np.nan] * len(out))
+    return out.sort_values("timestamp").reset_index(drop=True)
+
+def _explainability_from_metrics(metrics: dict | None) -> dict | None:
+    if metrics and "explainability" in metrics:
+        return metrics["explainability"]
+    return None
+
+
+@st.cache_data(show_spinner="Computing SHAP & LIME…", ttl=3600)
+def compute_explainability_live():
+    """Recompute explanations when metrics.json has no explainability block."""
+    from explainability import FEATURES, TARGET, build_explainability_report
+    from sklearn.model_selection import train_test_split
+
+    best_path = os.path.join(LOCAL_MODEL_DIR, "best_model.pkl")
+    if not os.path.isfile(best_path):
+        return None
+    live_model = joblib.load(best_path)
+    live_df = get_features()
+    clean = live_df.dropna()
+    if len(clean) < 30:
+        return None
+    X = clean[FEATURES]
+    y = clean[TARGET]
+    X_train, X_test, _, _ = train_test_split(X, y, test_size=0.2, random_state=42)
+    return build_explainability_report(
+        live_model, X_train, X_test, x_instance=clean.iloc[-1]
+    )
+
+
 def predict_days(model, last_row, n=7):
     preds = []
     now = datetime.now()
@@ -395,6 +893,10 @@ with st.spinner("🌫️ Loading AQI data..."):
         model, project, model_metrics, model_dir = load_model_and_project()
         df = get_features()
         current = get_current_aqi()
+        try:
+            forecast_hourly = get_hourly_aqi_forecast()
+        except Exception:
+            forecast_hourly = pd.DataFrame()
         model_loaded = True
     except Exception as e:
         st.error(f"Connection error: {e}")
@@ -587,6 +1089,106 @@ if "Overview" in page:
     else:
         st.success(f"✅ Air quality is **{category}**. Safe for most people.")
 
+    # ── Day picker + 24-hour chart (click a day to update the graph) ──
+    overview_days = build_overview_days(df, predictions, current_aqi, forecast_hourly)
+    if "overview_day" not in st.session_state:
+        st.session_state.overview_day = datetime.now().date()
+    valid_dates = {d["date"] for d in overview_days}
+    if st.session_state.overview_day not in valid_dates:
+        st.session_state.overview_day = datetime.now().date()
+
+    st.markdown('<div class="dash-day-wrap">', unsafe_allow_html=True)
+    render_day_card_picker(overview_days, st.session_state.overview_day)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    selected_date = st.session_state.overview_day
+    selected_meta = next(d for d in overview_days if d["date"] == selected_date)
+
+    st.markdown('<div class="dash-metric-tabs">', unsafe_allow_html=True)
+    metric_labels = [m[1] for m in OVERVIEW_METRICS]
+    metric_cols = [m[0] for m in OVERVIEW_METRICS]
+    chosen_label = st.radio(
+        "Metric",
+        metric_labels,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="overview_metric_radio",
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+    metric = metric_cols[metric_labels.index(chosen_label)]
+
+    hourly_df = hourly_series_for_day(
+        df, selected_date, metric, predictions, forecast_hourly
+    )
+    is_flat_fallback = (
+        "_estimated" in hourly_df.columns and hourly_df["_estimated"].any()
+    )
+    uses_openmeteo = (
+        selected_meta["is_forecast"]
+        and not is_flat_fallback
+        and forecast_hourly is not None
+        and not forecast_hourly.empty
+        and _hourly_from_forecast(forecast_hourly, selected_date, metric) is not None
+    )
+
+    bar_colors = [
+        get_aqi_color(int(v)) if metric == "us_aqi" and pd.notna(v) else "#4f8ef7"
+        for v in hourly_df[metric]
+    ]
+    fig_day = go.Figure()
+    fig_day.add_trace(go.Bar(
+        x=hourly_df["timestamp"],
+        y=hourly_df[metric].astype(float),
+        marker_color=bar_colors,
+        marker_line_width=0,
+        hovertemplate="%{x|%H:%M}<br>%{y:.0f}<extra></extra>",
+    ))
+    day_layout = get_plotly_layout(height=300)
+    day_layout["showlegend"] = False
+    day_layout["bargap"] = 0.15
+    day_layout["xaxis"]["tickformat"] = "%H:%M"
+    day_layout["xaxis"]["dtick"] = 7200000
+    if metric == "us_aqi":
+        day_layout["yaxis"]["range"] = [0, max(240, hourly_df[metric].max() * 1.1)]
+        day_layout["yaxis"]["dtick"] = 60
+    else:
+        day_layout["yaxis"]["title"] = "µg/m³"
+    fig_day.update_layout(**day_layout)
+
+    title_date = selected_date.strftime("%A, %b %d")
+    if uses_openmeteo:
+        est_note = " · Open-Meteo hourly forecast"
+    elif is_flat_fallback:
+        est_note = " · estimated from daily ML forecast"
+    else:
+        est_note = ""
+    st.markdown(
+        f'<div class="sec-lbl" style="margin-top:.75rem;">'
+        f'{chosen_label} — {title_date}{est_note}</div>',
+        unsafe_allow_html=True,
+    )
+    st.plotly_chart(fig_day, use_container_width=True)
+
+    if metric == "us_aqi":
+        legend_html = """
+        <div style="display:flex;flex-wrap:wrap;gap:.65rem 1.1rem;margin:.25rem 0 1rem;font-size:.72rem;color:#5e7292;">
+          <span><span style="color:#4ade80;">●</span> Good</span>
+          <span><span style="color:#f5c518;">●</span> Moderate</span>
+          <span><span style="color:#ff7043;">●</span> Poor</span>
+          <span><span style="color:#f87171;">●</span> Unhealthy</span>
+          <span><span style="color:#a78bfa;">●</span> Very unhealthy</span>
+          <span><span style="color:#7c3aed;">●</span> Hazardous</span>
+        </div>"""
+        st.markdown(legend_html, unsafe_allow_html=True)
+
+    conditions = build_day_conditions(
+        df, selected_date, hourly_df, metric, predictions, forecast_hourly
+    )
+    st.markdown(
+        f'<div class="dash-conditions"><strong style="color:#d8e2f5;">Current conditions</strong> — {conditions}</div>',
+        unsafe_allow_html=True,
+    )
+
     # Next 3 days = tomorrow + 2 days after (exclude today; current AQI is shown above)
     forecast_3 = predictions.iloc[1:4]
     model_note = (
@@ -743,20 +1345,6 @@ if "Overview" in page:
               </div>
             </div>
             """, unsafe_allow_html=True)
-
-    st.markdown('<div class="sec-lbl" style="margin-top:.5rem;">24-Hour AQI Trend</div>', unsafe_allow_html=True)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=last_24h["timestamp"], y=last_24h["us_aqi"],
-        fill='tozeroy', fillcolor='rgba(255,112,67,0.12)',
-        line=dict(color='#ff7043', width=2.5),
-        mode='lines', name='AQI',
-        hovertemplate='%{x|%H:%M}<br>AQI: %{y}<extra></extra>'
-    ))
-    layout = get_plotly_layout(height=280)
-    layout['xaxis']['showgrid'] = False
-    fig.update_layout(**layout)
-    st.plotly_chart(fig, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════
 # PAGE: HOURLY AQI
@@ -1196,9 +1784,84 @@ elif "Model" in page:
         st.markdown('<div class="sec-lbl" style="margin-top:1rem;">All models — ranked by R² (accuracy)</div>', unsafe_allow_html=True)
         st.dataframe(pd.DataFrame(comparison_rows), use_container_width=True, hide_index=True)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown('<div class="sec-lbl" style="margin-top:1rem;">Feature importance (best model)</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="sec-lbl" style="margin-top:1.25rem;">Feature importance explanations</div>',
+            unsafe_allow_html=True,
+        )
+        explainability = _explainability_from_metrics(model_metrics)
+        if explainability is None:
+            explainability = compute_explainability_live()
+
+        tab_shap, tab_lime, tab_sklearn = st.tabs(
+            ["SHAP (global)", "LIME (local)", "Sklearn built-in"]
+        )
+
+        with tab_shap:
+            shap_explainer_name = (
+                explainability["shap"]["explainer"]
+                if explainability and "shap" in explainability
+                else "—"
+            )
+            st.caption(
+                "SHAP shows how much each feature pushes the predicted AQI up or down "
+                f"on average (explainer: {shap_explainer_name})."
+            )
+            if explainability and "shap" in explainability:
+                shap_data = explainability["shap"]
+                shap_vals = [shap_data["mean_abs_shap"][f] for f in shap_data["feature_names"]]
+                shap_labels = shap_data["feature_labels"]
+                order = np.argsort(shap_vals)
+                fig_shap = go.Figure(go.Bar(
+                    x=[shap_vals[i] for i in order],
+                    y=[shap_labels[i] for i in order],
+                    orientation="h",
+                    marker_color=[chart_colors[i % len(chart_colors)] for i in order],
+                    hovertemplate="%{y}: |SHAP| = %{x:.3f}<extra></extra>",
+                ))
+                fig_shap.update_layout(**get_plotly_layout(height=320))
+                st.plotly_chart(fig_shap, use_container_width=True)
+                st.markdown(
+                    f'<div style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:#5e7292;">'
+                    f'Base prediction (expected AQI): <strong style="color:#d8e2f5;">'
+                    f'{shap_data["base_value"]}</strong> · '
+                    f'{shap_data["samples_explained"]} test samples</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.info("Run `python training_pipeline.py` (with `shap` installed) to generate SHAP values.")
+
+        with tab_lime:
+            st.caption(
+                "LIME explains one forecast: which inputs raised or lowered the predicted AQI "
+                "for the latest feature row."
+            )
+            if explainability and "lime" in explainability:
+                lime_data = explainability["lime"]
+                lime_sorted = sorted(
+                    lime_data["weights"], key=lambda w: abs(w["weight"]), reverse=True
+                )
+                fig_lime = go.Figure(go.Bar(
+                    x=[w["weight"] for w in lime_sorted],
+                    y=[w["label"] for w in lime_sorted],
+                    orientation="h",
+                    marker_color=[
+                        "#f87171" if w["weight"] > 0 else "#4ade80" for w in lime_sorted
+                    ],
+                    hovertemplate="%{y}: %{x:+.2f} AQI<extra></extra>",
+                ))
+                fig_lime.update_layout(**get_plotly_layout(height=320))
+                st.plotly_chart(fig_lime, use_container_width=True)
+                st.markdown(
+                    f'<div style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:#5e7292;">'
+                    f'Predicted AQI: <strong style="color:#d8e2f5;">{lime_data["prediction"]}</strong> · '
+                    f'LIME intercept: {lime_data["intercept"]}</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.info("LIME explanation unavailable until training saves explainability metrics.")
+
+        with tab_sklearn:
+            st.caption("Native feature importance from tree models (mean decrease in impurity).")
             if hasattr(model, "feature_importances_"):
                 imp = model.feature_importances_
                 order = np.argsort(imp)
@@ -1212,9 +1875,10 @@ elif "Model" in page:
                 fig.update_layout(**get_plotly_layout(height=300))
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("Feature importance is not available for the selected linear model.")
+                st.info("Built-in importance is not available for Ridge or KNN — use SHAP or LIME tabs.")
 
-        with col2:
+        col1, col2 = st.columns(2)
+        with col1:
             st.markdown('<div class="sec-lbl" style="margin-top:1rem;">Model comparison (5 models)</div>', unsafe_allow_html=True)
             names = [m["display_name"] for m in model_metrics["models"].values()]
             r2_vals = [m["r2_pct"] for m in model_metrics["models"].values()]
@@ -1237,6 +1901,18 @@ elif "Model" in page:
             layout2['yaxis']['title'] = 'R² (% accuracy proxy)'
             fig2.update_layout(**layout2)
             st.plotly_chart(fig2, use_container_width=True)
+
+        with col2:
+            st.markdown('<div class="sec-lbl" style="margin-top:1rem;">RMSE & MAE (best highlighted)</div>', unsafe_allow_html=True)
+            fig_rmse_mini = go.Figure()
+            fig_rmse_mini.add_trace(go.Bar(
+                name=model_metrics["best_display_name"],
+                x=["RMSE", "MAE"],
+                y=[best["rmse"], best["mae"]],
+                marker_color="#00e0aa",
+            ))
+            fig_rmse_mini.update_layout(**get_plotly_layout(height=300))
+            st.plotly_chart(fig_rmse_mini, use_container_width=True)
 
         st.markdown('<div class="sec-lbl">RMSE & MAE comparison</div>', unsafe_allow_html=True)
         fig_rmse = go.Figure()

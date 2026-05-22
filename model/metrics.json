@@ -2675,5 +2675,127 @@
       143.85714285714286,
       88.71428571428571
     ]
+  },
+  "explainability": {
+    "shap": {
+      "method": "shap",
+      "explainer": "tree",
+      "feature_names": [
+        "hour",
+        "day",
+        "month",
+        "day_of_week",
+        "pm2_5",
+        "pm10",
+        "carbon_monoxide",
+        "nitrogen_dioxide",
+        "ozone",
+        "sulphur_dioxide",
+        "aqi_change_rate"
+      ],
+      "feature_labels": [
+        "Hour",
+        "Day",
+        "Month",
+        "Day of week",
+        "PM2.5",
+        "PM10",
+        "CO",
+        "NO\u2082",
+        "Ozone",
+        "SO\u2082",
+        "AQI \u0394 rate"
+      ],
+      "mean_abs_shap": {
+        "hour": 4.0367,
+        "day": 5.5026,
+        "month": 13.2353,
+        "day_of_week": 1.3583,
+        "pm2_5": 8.0601,
+        "pm10": 1.4853,
+        "carbon_monoxide": 0.396,
+        "nitrogen_dioxide": 0.7253,
+        "ozone": 3.3328,
+        "sulphur_dioxide": 2.2166,
+        "aqi_change_rate": 1.7617
+      },
+      "base_value": 120.75,
+      "samples_explained": 120
+    },
+    "lime": {
+      "method": "lime",
+      "prediction": 98.0,
+      "intercept": 132.74,
+      "weights": [
+        {
+          "feature": "3.00 < month <= 4.00",
+          "label": "Month",
+          "weight": -26.9426
+        },
+        {
+          "feature": "pm2_5 <= 25.50",
+          "label": "PM2.5",
+          "weight": -9.91
+        },
+        {
+          "feature": "day <= 8.00",
+          "label": "Day",
+          "weight": 4.3242
+        },
+        {
+          "feature": "85.00 < ozone <= 144.00",
+          "label": "Ozone",
+          "weight": 2.5694
+        },
+        {
+          "feature": "sulphur_dioxide <= 8.60",
+          "label": "SO\u2082",
+          "weight": -2.0955
+        },
+        {
+          "feature": "6.00 < hour <= 12.00",
+          "label": "Hour",
+          "weight": 1.4254
+        },
+        {
+          "feature": "1.00 < day_of_week <= 3.00",
+          "label": "Day",
+          "weight": 1.3009
+        },
+        {
+          "feature": "nitrogen_dioxide <= 8.75",
+          "label": "NO\u2082",
+          "weight": -1.2239
+        },
+        {
+          "feature": "61.70 < pm10 <= 93.50",
+          "label": "PM10",
+          "weight": 1.0393
+        },
+        {
+          "feature": "aqi_change_rate <= -1.00",
+          "label": "AQI \u0394 rate",
+          "weight": 0.3137
+        },
+        {
+          "feature": "carbon_monoxide <= 452.00",
+          "label": "CO",
+          "weight": 0.0541
+        }
+      ],
+      "instance": {
+        "hour": 9.0,
+        "day": 2.0,
+        "month": 4.0,
+        "day_of_week": 3.0,
+        "pm2_5": 19.2,
+        "pm10": 68.2,
+        "carbon_monoxide": 258.0,
+        "nitrogen_dioxide": 2.9,
+        "ozone": 137.0,
+        "sulphur_dioxide": 3.5,
+        "aqi_change_rate": -1.0
+      }
+    }
   }
 }
