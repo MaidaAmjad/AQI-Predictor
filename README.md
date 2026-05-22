@@ -45,3 +45,13 @@ Optional: `FEATURE_GROUP_NAME`, `FEATURE_GROUP_VERSION`, `LATITUDE`, `LONGITUDE`
 4. Run the Streamlit app locally to view the dashboard.
 
 See [docs/index.html — §5 GitHub Actions CI/CD](docs/index.html#cicd) for full details.
+
+## Deploy dashboard (Streamlit Community Cloud)
+
+1. Connect the GitHub repo at [share.streamlit.io](https://share.streamlit.io).
+2. **Main file:** `app/app/streamlit_app.py`
+3. **Python version:** the repo pins **3.12** via `.python-version` (do not use 3.14 — it breaks `protobuf` / Streamlit startup).
+4. **Secrets** (same as local `.env`): `HOPSWORKS_API_KEY`, `HOPSWORKS_PROJECT_NAME`; optional `LATITUDE`, `LONGITUDE`, `MODEL_VERSION`.
+5. Ensure GitHub Actions training has run at least once so Hopsworks Model Registry has `aqi_predictor`.
+
+After changing `.python-version`, reboot the app in Cloud (**Manage app → Reboot**).
