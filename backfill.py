@@ -41,7 +41,7 @@ def process_historical_data(data):
     for i, time_str in enumerate(times):
         dt = datetime.fromisoformat(time_str)
         aqi = hourly["us_aqi"][i] or 0
-        aqi_change_rate = aqi - prev_aqi if prev_aqi is not None else 0
+        aqi_change_rate = int(aqi - prev_aqi) if prev_aqi is not None else 0
         prev_aqi = aqi
 
         records.append({

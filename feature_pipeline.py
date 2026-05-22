@@ -37,8 +37,8 @@ def compute_features(data, prev_aqi=None):
     now = datetime.now()
     current = data["current"]
 
-    aqi = current.get("us_aqi", 0) or 0
-    aqi_change_rate = (aqi - prev_aqi) if prev_aqi is not None else 0
+    aqi = int(current.get("us_aqi", 0) or 0)
+    aqi_change_rate = int(aqi - int(prev_aqi)) if prev_aqi is not None else 0
 
     features = {
         "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -85,7 +85,7 @@ def _last_us_aqi(fg):
         city_rows = existing[existing["city"] == CITY_NAME]
         if city_rows.empty:
             return None
-        return float(city_rows.sort_values("timestamp").iloc[-1]["us_aqi"])
+        return int(city_rows.sort_values("timestamp").iloc[-1]["us_aqi"])
     except Exception as exc:
         print(f"Could not read prior AQI (using 0 change rate): {exc}")
         return None
@@ -100,6 +100,7 @@ if __name__ == "__main__":
 
     print("Computing features...")
     df = compute_features(raw_data, prev_aqi=prev_aqi)
+    df["aqi_change_rate"] = df["aqi_change_rate"].astype("int64")
     print(df)
 
     print("Storing in Hopsworks...")
