@@ -1,4 +1,5 @@
-# Streamlit Cloud: use Python 3.12 (.python-version). Python 3.14 breaks protobuf/streamlit.
+# Streamlit Cloud: select Python 3.12 in Advanced settings when deploying (NOT 3.14).
+# Hopsworks requires Python <3.14; protobuf 4.x crashes on 3.14 at import time.
 pandas>=2.0,<3
 numpy>=1.24,<3
 requests>=2.28

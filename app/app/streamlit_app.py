@@ -231,36 +231,6 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     padding: 1rem 1.1rem;
     text-align: center;
 }
-.forecast-hero {
-    background: linear-gradient(135deg, rgba(0,224,170,0.06) 0%, rgba(79,142,247,0.04) 100%);
-    border: 1px solid rgba(0,224,170,0.18);
-    border-radius: 18px;
-    padding: 1.35rem 1.5rem 1.5rem;
-    margin-bottom: 1.25rem;
-}
-.forecast-day-card {
-    background: #0d1120;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 1.25rem 1.1rem 1.1rem;
-    text-align: center;
-    height: 100%;
-    transition: border-color .2s, transform .2s;
-}
-.forecast-day-card:hover {
-    border-color: rgba(255,255,255,0.14);
-    transform: translateY(-2px);
-}
-.forecast-3-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-}
-@media (max-width: 900px) {
-    .forecast-3-grid { grid-template-columns: 1fr; }
-}
-
 /* Overview day cards — original glass cards; invisible click layer on card only */
 .dash-day-wrap {
     margin-bottom: 0.75rem;
@@ -1188,71 +1158,6 @@ if "Overview" in page:
         f'<div class="dash-conditions"><strong style="color:#d8e2f5;">Current conditions</strong> — {conditions}</div>',
         unsafe_allow_html=True,
     )
-
-    # Next 3 days = tomorrow + 2 days after (exclude today; current AQI is shown above)
-    forecast_3 = predictions.iloc[1:4]
-    model_note = (
-        f" · {html.escape(model_metrics['best_display_name'])}"
-        if model_metrics else ""
-    )
-
-    st.markdown(
-        f'<div class="forecast-hero">'
-        f'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">'
-        f'<div><div class="sec-lbl" style="margin:0;color:#00e0aa;font-size:.7rem;">Next 3 days</div>'
-        f'<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:1.35rem;color:#d8e2f5;margin-top:.2rem;">AQI Forecast</div></div>'
-        f'<div style="font-family:\'DM Mono\',monospace;font-size:.62rem;color:#5e7292;">Powered by best model{model_note}</div>'
-        f'</div></div>',
-        unsafe_allow_html=True,
-    )
-
-    fc1, fc2, fc3 = st.columns(3)
-    for col, i in zip([fc1, fc2, fc3], range(len(forecast_3))):
-        row = forecast_3.iloc[i]
-        c = html.escape(str(row["Color"]))
-        aqi_val = int(row["Predicted AQI"])
-        pct = min(aqi_val / 300 * 100, 100)
-        weekday = str(row["Date"]).split(",")[0].strip()
-        label = html.escape("Tomorrow" if i == 0 else weekday)
-        date_sub = html.escape(str(row["Date"]).split(", ")[-1] if ", " in str(row["Date"]) else str(row["Date"]))
-        cat = html.escape(str(row["Category"]))
-        with col:
-            st.markdown(
-                f'<div class="forecast-day-card" style="border-top:4px solid {c};">'
-                f'<div style="font-family:\'DM Mono\',monospace;font-size:.62rem;letter-spacing:.12em;color:#00e0aa;text-transform:uppercase;margin-bottom:.35rem;">{label}</div>'
-                f'<div style="font-family:\'DM Mono\',monospace;font-size:.58rem;color:#5e7292;margin-bottom:.75rem;">{date_sub}</div>'
-                f'<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:3.25rem;line-height:1;color:{c};letter-spacing:-.04em;">{aqi_val}</div>'
-                f'<div style="font-size:.72rem;font-weight:600;color:{c};margin:.5rem 0 .65rem;">{cat}</div>'
-                f'<div style="height:5px;background:#161f32;border-radius:100px;overflow:hidden;margin:0 auto;max-width:140px;">'
-                f'<div style="height:100%;width:{pct:.0f}%;background:{c};border-radius:100px;"></div></div>'
-                f'<div style="font-family:\'DM Mono\',monospace;font-size:.55rem;color:#3d4f6a;margin-top:.5rem;">US AQI</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-
-    bar_colors = [hex_to_rgba(row["Color"], 0.75) for _, row in forecast_3.iterrows()]
-    chart_labels = [
-        "Tomorrow" if i == 0 else forecast_3.iloc[i]["Date"].split(",")[0].strip()
-        for i in range(len(forecast_3))
-    ]
-    fig_fc = go.Figure(go.Bar(
-        x=chart_labels,
-        y=forecast_3["Predicted AQI"],
-        marker_color=bar_colors,
-        marker_line_color=[row["Color"] for _, row in forecast_3.iterrows()],
-        marker_line_width=2,
-        text=[str(int(v)) for v in forecast_3["Predicted AQI"]],
-        textposition="outside",
-        textfont=dict(size=14, color="#d8e2f5", family="Syne"),
-        hovertemplate="%{x}<br>AQI: %{y}<extra></extra>",
-    ))
-    fc_layout = get_plotly_layout(height=200)
-    fc_layout["yaxis"]["title"] = "Predicted US AQI"
-    fc_layout["margin"]["t"] = 40
-    fig_fc.update_layout(**fc_layout)
-
-    st.plotly_chart(fig_fc, use_container_width=True)
-    st.caption("See **Forecast** in the sidebar for the full 7-day outlook.")
 
     # ML models used for forecasts
     st.markdown('<div class="sec-lbl" style="margin-top:1.25rem;">Prediction models</div>', unsafe_allow_html=True)

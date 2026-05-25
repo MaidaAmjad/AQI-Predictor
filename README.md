@@ -48,10 +48,12 @@ See [docs/index.html — §5 GitHub Actions CI/CD](docs/index.html#cicd) for ful
 
 ## Deploy dashboard (Streamlit Community Cloud)
 
+**Full guide:** [DEPLOY_STREAMLIT.md](DEPLOY_STREAMLIT.md)
+
+**Important:** Use **Python 3.12** in the deploy **Advanced settings** dropdown. Python **3.14** breaks this app (`protobuf` + Hopsworks). Rebooting is not enough — if logs show `Python 3.14.5`, delete the app and redeploy with **3.12** selected.
+
 1. Connect the GitHub repo at [share.streamlit.io](https://share.streamlit.io).
 2. **Main file:** `app/app/streamlit_app.py`
-3. **Python version:** the repo pins **3.12** via `.python-version` (do not use 3.14 — it breaks `protobuf` / Streamlit startup).
-4. **Secrets** (same as local `.env`): `HOPSWORKS_API_KEY`, `HOPSWORKS_PROJECT_NAME`; optional `LATITUDE`, `LONGITUDE`, `MODEL_VERSION`.
-5. Ensure GitHub Actions training has run at least once so Hopsworks Model Registry has `aqi_predictor`.
-
-After changing `.python-version`, reboot the app in Cloud (**Manage app → Reboot**).
+3. **Advanced settings → Python version:** **3.12** (required)
+4. **Secrets:** `HOPSWORKS_API_KEY`, `HOPSWORKS_PROJECT_NAME`; optional `LATITUDE`, `LONGITUDE`, `MODEL_VERSION`
+5. Train pipeline must have run at least once so Hopsworks has `aqi_predictor`

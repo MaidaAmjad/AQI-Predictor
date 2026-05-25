@@ -1,0 +1,10 @@
+[project]
+name = "aqi-predictor"
+version = "1.0.0"
+description = "Lahore AQI monitoring and forecasting dashboard"
+requires-python = ">=3.11,<3.14"
+readme = "README.md"
+
+[tool.streamlit]
+# Entrypoint for Streamlit Cloud (informational; set the same path in the deploy UI)
+entrypoint = "app/app/streamlit_app.py"
