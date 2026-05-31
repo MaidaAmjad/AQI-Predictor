@@ -327,11 +327,11 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     height: auto !important;
     margin: 0 !important;
     padding: 0.5rem 0.75rem !important;
-    background: #07090f !important;
-    background-color: #07090f !important;
+    background: #2a3142 !important;
+    background-color: #2a3142 !important;
     background-image: none !important;
-    color: #d8e2f5 !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
     border-radius: 10px !important;
     box-shadow: none !important;
     font-family: 'Epilogue', sans-serif !important;
@@ -349,16 +349,16 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:focus,
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] a:focus,
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:focus-visible {
-    background: #111826 !important;
-    background-color: #111826 !important;
+    background: #353d52 !important;
+    background-color: #353d52 !important;
     background-image: none !important;
-    border-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
     color: #ffffff !important;
     box-shadow: none !important;
 }
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:active {
-    background: #0a0d16 !important;
-    background-color: #0a0d16 !important;
+    background: #1e2430 !important;
+    background-color: #1e2430 !important;
     background-image: none !important;
 }
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] button p,
@@ -366,7 +366,7 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] button div,
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-testid="stMarkdownContainer"],
 .dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-testid="stMarkdownContainer"] p {
-    color: #d8e2f5 !important;
+    color: #ffffff !important;
     background: transparent !important;
     background-color: transparent !important;
     font-size: 0.78rem !important;
@@ -713,16 +713,24 @@ def render_day_card_picker(days: list, selected_date) -> None:
         <style>
         section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button,
         section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] a,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] [data-baseweb="button"] {
-            background: #07090f !important;
-            background-color: #07090f !important;
-            color: #d8e2f5 !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] [data-baseweb="button"],
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] > div,
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] > div > button {
+            background: #2a3142 !important;
+            background-color: #2a3142 !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        }
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button p,
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button span {
+            color: #ffffff !important;
         }
         section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button:hover,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] a:hover {
-            background: #111826 !important;
-            background-color: #111826 !important;
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] a:hover,
+        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] [data-baseweb="button"]:hover {
+            background: #353d52 !important;
+            background-color: #353d52 !important;
             color: #ffffff !important;
         }
         </style>
