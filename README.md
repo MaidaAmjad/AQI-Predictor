@@ -1,5 +1,5 @@
 # AQI-Predictor
-
+Live Link : https://maida-aqi-predictor.streamlit.app/
 Air quality monitoring and 7-day AQI forecasting for Lahore, Pakistan.
 
 **Documentation:** open [`docs/index.html`](docs/index.html) for project flow, 5-model training, Overview UI, GitHub Actions CI/CD, artifacts, libraries, setup, and troubleshooting.
