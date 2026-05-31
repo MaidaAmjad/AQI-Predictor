@@ -504,8 +504,11 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     color: #d8e2f5 !important;
 }
 [data-testid="stSidebar"] p,
-[data-testid="stSidebar"] span {
-    color: #d8e2f5;
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] div {
+    color: #d8e2f5 !important;
 }
 [data-testid="stSidebar"] .stRadio label {
     color: #c5d4ea !important;
@@ -581,29 +584,35 @@ def get_aqi_category(aqi):
     else: return "Hazardous", "☠️"
 
 def get_plotly_layout(title="", height=300):
-    _axis = dict(
-        gridcolor='rgba(255,255,255,0.06)',
-        zerolinecolor='rgba(255,255,255,0.06)',
-        tickfont=dict(color='#b8c5dc', size=10),
-        titlefont=dict(color='#d8e2f5', size=11),
-        color='#b8c5dc',
-    )
-    return dict(
-        title=dict(text=title, font=dict(color='#d8e2f5', size=12)) if title else None,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#b8c5dc', family='DM Mono, monospace', size=10),
+    """Plotly layout with light axis text. Omit title key when empty (title=None breaks update_layout)."""
+    layout = dict(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#b8c5dc", family="DM Mono, monospace", size=10),
         height=height,
         margin=dict(l=40, r=20, t=30, b=40),
-        xaxis=dict(**_axis),
-        yaxis=dict(**_axis),
+        xaxis=dict(
+            gridcolor="rgba(255,255,255,0.06)",
+            zerolinecolor="rgba(255,255,255,0.06)",
+            tickfont=dict(color="#b8c5dc", size=10),
+            linecolor="rgba(255,255,255,0.08)",
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,255,255,0.06)",
+            zerolinecolor="rgba(255,255,255,0.06)",
+            tickfont=dict(color="#b8c5dc", size=10),
+            linecolor="rgba(255,255,255,0.08)",
+        ),
         legend=dict(
-            bgcolor='rgba(0,0,0,0)',
-            bordercolor='rgba(255,255,255,0.06)',
-            font=dict(color='#d8e2f5', size=10),
+            bgcolor="rgba(0,0,0,0)",
+            bordercolor="rgba(255,255,255,0.06)",
+            font=dict(color="#d8e2f5", size=10),
         ),
         showlegend=True,
     )
+    if title:
+        layout["title"] = dict(text=title, font=dict(color="#d8e2f5", size=12))
+    return layout
 
 def get_aqi_category_short(aqi):
     if aqi <= 50:
@@ -1118,7 +1127,7 @@ with st.sidebar:
     ], label_visibility="collapsed")
 
     st.markdown(f"""
-    <div style="margin-top:auto;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">
+    <div style="margin-top:auto;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);font-family:'DM Mono',monospace;font-size:.58rem;color:#d8e2f5;">
       Open-Meteo · Hopsworks · v1.0<br>Updated {datetime.now().strftime('%H:%M, %b %d')}
     </div>
     """, unsafe_allow_html=True)
