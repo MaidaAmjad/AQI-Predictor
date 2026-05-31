@@ -438,6 +438,34 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     border-radius: 100px;
     min-height: 10px;
 }
+.wx-day-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+.wx-see-graph-btn {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    box-sizing: border-box;
+    text-align: center;
+    font-family: 'Epilogue', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    background: #2a3142;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease;
+}
+.wx-see-graph-btn:hover {
+    background: #353d52;
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #ffffff !important;
+}
 /* Pollutant / metric pills (Overview) — st-key from key="overview_metric_radio" */
 .st-key-overview_metric_radio [data-testid="stRadio"] > div,
 .dash-metric-tabs [data-testid="stRadio"] > div {
@@ -688,55 +716,37 @@ def _weather_day_card(day: dict, selected: bool) -> str:
     """
 
 
-def _select_overview_day(day_date):
-    st.session_state.overview_day = day_date
+def _sync_overview_day_query(valid_dates: set) -> None:
+    """Apply ?overview_day=YYYY-MM-DD from See Graph links."""
+    raw = st.query_params.get("overview_day")
+    if not raw:
+        return
+    try:
+        picked = datetime.strptime(str(raw), "%Y-%m-%d").date()
+        if picked in valid_dates:
+            st.session_state.overview_day = picked
+    except ValueError:
+        pass
+
+
+def _see_graph_link(day_date) -> str:
+    iso = day_date.isoformat()
+    return f'<a class="wx-see-graph-btn" href="?overview_day={iso}">See Graph →</a>'
 
 
 def render_day_card_picker(days: list, selected_date) -> None:
-    """Original HTML day cards; click on card updates overview_day and the chart below."""
+    """HTML day cards + grey See Graph links (no Streamlit buttons — avoids white chrome)."""
     day_cols = st.columns(len(days))
     for col, day in zip(day_cols, days):
         with col:
             is_selected = day["date"] == selected_date
-            st.markdown(_weather_day_card(day, is_selected), unsafe_allow_html=True)
-            st.button(
-                "See Graph ->",
-                key=f"overview_day_{day['date']}",
-                on_click=_select_overview_day,
-                kwargs={"day_date": day["date"]},
-                use_container_width=True,
-                type="secondary",
+            iso = day["date"].isoformat()
+            card_html = _weather_day_card(day, is_selected)
+            st.markdown(
+                f'<a class="wx-day-card-link" href="?overview_day={iso}">{card_html}</a>'
+                f'{_see_graph_link(day["date"])}',
+                unsafe_allow_html=True,
             )
-    # Late-loaded overrides beat Streamlit default white secondary button styles
-    st.markdown(
-        """
-        <style>
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] a,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] [data-baseweb="button"],
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] > div,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] > div > button {
-            background: #2a3142 !important;
-            background-color: #2a3142 !important;
-            background-image: none !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        }
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button p,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button span {
-            color: #ffffff !important;
-        }
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] button:hover,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] a:hover,
-        section[data-testid="stAppViewContainer"] .dash-day-wrap [data-testid="stButton"] [data-baseweb="button"]:hover {
-            background: #353d52 !important;
-            background-color: #353d52 !important;
-            color: #ffffff !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 def build_overview_days(df, predictions, current_aqi, forecast_hourly=None):
@@ -1279,6 +1289,7 @@ if "Overview" in page:
     valid_dates = {d["date"] for d in overview_days}
     if st.session_state.overview_day not in valid_dates:
         st.session_state.overview_day = datetime.now().date()
+    _sync_overview_day_query(valid_dates)
 
     st.markdown('<div class="dash-day-wrap">', unsafe_allow_html=True)
     render_day_card_picker(overview_days, st.session_state.overview_day)
