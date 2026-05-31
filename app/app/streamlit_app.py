@@ -299,78 +299,80 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
 }
 .dash-day-wrap [data-testid="column"] [data-testid="stMarkdownContainer"] {
     margin: 0 !important;
+    pointer-events: none !important;
 }
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] {
-    margin-top: 0.5rem !important;
+/* Invisible hit target over the glass card */
+.dash-day-wrap [class*="st-key-day_card_"] {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     width: 100% !important;
+    height: 7.6rem !important;
+    margin: 0 !important;
+    z-index: 6 !important;
     background: transparent !important;
 }
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] > div,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] > div > div {
+.dash-day-wrap [class*="st-key-day_card_"] [data-testid="stButton"] > div,
+.dash-day-wrap [class*="st-key-day_card_"] [data-testid="stButton"] > div > div {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.dash-day-wrap [class*="st-key-day_card_"] button {
+    width: 100% !important;
+    height: 7.6rem !important;
+    min-height: 7.6rem !important;
+    opacity: 0 !important;
     background: transparent !important;
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
+}
+/* Visible grey See Graph buttons */
+.dash-day-wrap [class*="st-key-overview_day_"] {
+    margin-top: 0.5rem !important;
+    width: 100% !important;
+    z-index: 8 !important;
+    background: transparent !important;
+}
+.dash-day-wrap [class*="st-key-overview_day_"] [data-testid="stButton"] > div,
+.dash-day-wrap [class*="st-key-overview_day_"] [data-testid="stButton"] > div > div {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
     width: 100% !important;
 }
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] a,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-baseweb="button"],
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button[kind="secondary"],
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button[kind="primary"],
-.dash-day-wrap [data-testid="column"] [data-testid="stBaseButton-secondary"],
-.dash-day-wrap [data-testid="column"] [data-testid="stBaseButton-primary"] {
+.dash-day-wrap [class*="st-key-overview_day_"] button,
+.dash-day-wrap [class*="st-key-overview_day_"] [data-baseweb="button"] {
     width: 100% !important;
     min-height: 2.35rem !important;
-    height: auto !important;
     margin: 0 !important;
     padding: 0.5rem 0.75rem !important;
     background: #2a3142 !important;
     background-color: #2a3142 !important;
-    background-image: none !important;
     color: #ffffff !important;
     border: 1px solid rgba(255, 255, 255, 0.14) !important;
     border-radius: 10px !important;
-    box-shadow: none !important;
     font-family: 'Epilogue', sans-serif !important;
     font-size: 0.78rem !important;
     font-weight: 500 !important;
-    letter-spacing: 0.02em !important;
-    cursor: pointer !important;
-    opacity: 1 !important;
-    -webkit-appearance: none !important;
-    appearance: none !important;
 }
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:hover,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] a:hover,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-baseweb="button"]:hover,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:focus,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] a:focus,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:focus-visible {
+.dash-day-wrap [class*="st-key-overview_day_"] button:hover {
     background: #353d52 !important;
     background-color: #353d52 !important;
-    background-image: none !important;
     border-color: rgba(255, 255, 255, 0.22) !important;
     color: #ffffff !important;
-    box-shadow: none !important;
 }
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button:active {
-    background: #1e2430 !important;
-    background-color: #1e2430 !important;
-    background-image: none !important;
-}
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button p,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button span,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] button div,
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-testid="stMarkdownContainer"],
-.dash-day-wrap [data-testid="column"] [data-testid="stButton"] [data-testid="stMarkdownContainer"] p {
+.dash-day-wrap [class*="st-key-overview_day_"] button p,
+.dash-day-wrap [class*="st-key-overview_day_"] button span {
     color: #ffffff !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    font-size: 0.78rem !important;
-    margin: 0 !important;
 }
 .dash-day-wrap [data-testid="column"]:hover .wx-day-card {
     border-color: rgba(255, 255, 255, 0.2) !important;
@@ -437,34 +439,6 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     width: 100%;
     border-radius: 100px;
     min-height: 10px;
-}
-.wx-day-card-link {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-}
-.wx-see-graph-btn {
-    display: block;
-    width: 100%;
-    margin-top: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    box-sizing: border-box;
-    text-align: center;
-    font-family: 'Epilogue', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: #ffffff !important;
-    text-decoration: none !important;
-    background: #2a3142;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.18s ease, border-color 0.18s ease;
-}
-.wx-see-graph-btn:hover {
-    background: #353d52;
-    border-color: rgba(255, 255, 255, 0.22);
-    color: #ffffff !important;
 }
 /* Pollutant / metric pills (Overview) — st-key from key="overview_metric_radio" */
 .st-key-overview_metric_radio [data-testid="stRadio"] > div,
@@ -729,23 +703,36 @@ def _sync_overview_day_query(valid_dates: set) -> None:
         pass
 
 
-def _see_graph_link(day_date) -> str:
-    iso = day_date.isoformat()
-    return f'<a class="wx-see-graph-btn" href="?overview_day={iso}">See Graph →</a>'
+def _select_overview_day(day_date):
+    st.session_state.overview_day = day_date
+
+
+def _overview_day_button_key(day_date) -> str:
+    return f"overview_day_{day_date.strftime('%Y_%m_%d')}"
 
 
 def render_day_card_picker(days: list, selected_date) -> None:
-    """HTML day cards + grey See Graph links (no Streamlit buttons — avoids white chrome)."""
+    """Day cards (HTML) + Streamlit buttons for reliable clicks; styled grey via theme/CSS."""
     day_cols = st.columns(len(days))
     for col, day in zip(day_cols, days):
         with col:
             is_selected = day["date"] == selected_date
-            iso = day["date"].isoformat()
-            card_html = _weather_day_card(day, is_selected)
-            st.markdown(
-                f'<a class="wx-day-card-link" href="?overview_day={iso}">{card_html}</a>'
-                f'{_see_graph_link(day["date"])}',
-                unsafe_allow_html=True,
+            st.markdown(_weather_day_card(day, is_selected), unsafe_allow_html=True)
+            st.button(
+                "\u200b",
+                key=f"day_card_{day['date'].strftime('%Y_%m_%d')}",
+                on_click=_select_overview_day,
+                kwargs={"day_date": day["date"]},
+                use_container_width=True,
+                type="secondary",
+            )
+            st.button(
+                "See Graph →",
+                key=_overview_day_button_key(day["date"]),
+                on_click=_select_overview_day,
+                kwargs={"day_date": day["date"]},
+                use_container_width=True,
+                type="secondary",
             )
 
 
