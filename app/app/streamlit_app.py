@@ -9,7 +9,7 @@ import joblib
 import hopsworks
 import os
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -285,63 +285,28 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     padding: 1rem 1.1rem;
     text-align: center;
 }
-/* Overview day cards — original glass cards; invisible click layer on card only */
-.dash-day-wrap {
+/* Overview day cards + See Graph buttons (inside st.container key=overview_day_picker) */
+.st-key-overview_day_picker {
     margin-bottom: 0.75rem;
 }
-.dash-day-wrap [data-testid="stHorizontalBlock"] {
+.st-key-overview_day_picker [data-testid="stHorizontalBlock"] {
     align-items: stretch !important;
     gap: 0.75rem !important;
 }
-.dash-day-wrap [data-testid="column"] {
+.st-key-overview_day_picker [data-testid="column"] {
     position: relative !important;
     padding: 0 !important;
 }
-.dash-day-wrap [data-testid="column"] [data-testid="stMarkdownContainer"] {
-    margin: 0 !important;
-    pointer-events: none !important;
-}
-/* Invisible hit target over the glass card */
-.dash-day-wrap [class*="st-key-day_card_"] {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    height: 7.6rem !important;
-    margin: 0 !important;
-    z-index: 6 !important;
-    background: transparent !important;
-}
-.dash-day-wrap [class*="st-key-day_card_"] [data-testid="stButton"] > div,
-.dash-day-wrap [class*="st-key-day_card_"] [data-testid="stButton"] > div > div {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
+.st-key-overview_day_picker [data-testid="column"] [data-testid="stMarkdownContainer"] {
     margin: 0 !important;
 }
-.dash-day-wrap [class*="st-key-day_card_"] button {
-    width: 100% !important;
-    height: 7.6rem !important;
-    min-height: 7.6rem !important;
-    opacity: 0 !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-/* Visible grey See Graph buttons */
-.dash-day-wrap [class*="st-key-overview_day_"] {
+.st-key-overview_day_picker [class*="st-key-see_graph_"] {
     margin-top: 0.5rem !important;
     width: 100% !important;
-    z-index: 8 !important;
     background: transparent !important;
 }
-.dash-day-wrap [class*="st-key-overview_day_"] [data-testid="stButton"] > div,
-.dash-day-wrap [class*="st-key-overview_day_"] [data-testid="stButton"] > div > div {
+.st-key-overview_day_picker [class*="st-key-see_graph_"] [data-testid="stButton"] > div,
+.st-key-overview_day_picker [class*="st-key-see_graph_"] [data-testid="stButton"] > div > div {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -349,8 +314,8 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     margin: 0 !important;
     width: 100% !important;
 }
-.dash-day-wrap [class*="st-key-overview_day_"] button,
-.dash-day-wrap [class*="st-key-overview_day_"] [data-baseweb="button"] {
+.st-key-overview_day_picker [class*="st-key-see_graph_"] button,
+.st-key-overview_day_picker [class*="st-key-see_graph_"] [data-baseweb="button"] {
     width: 100% !important;
     min-height: 2.35rem !important;
     margin: 0 !important;
@@ -364,17 +329,17 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     font-size: 0.78rem !important;
     font-weight: 500 !important;
 }
-.dash-day-wrap [class*="st-key-overview_day_"] button:hover {
+.st-key-overview_day_picker [class*="st-key-see_graph_"] button:hover {
     background: #353d52 !important;
     background-color: #353d52 !important;
     border-color: rgba(255, 255, 255, 0.22) !important;
     color: #ffffff !important;
 }
-.dash-day-wrap [class*="st-key-overview_day_"] button p,
-.dash-day-wrap [class*="st-key-overview_day_"] button span {
+.st-key-overview_day_picker [class*="st-key-see_graph_"] button p,
+.st-key-overview_day_picker [class*="st-key-see_graph_"] button span {
     color: #ffffff !important;
 }
-.dash-day-wrap [data-testid="column"]:hover .wx-day-card {
+.st-key-overview_day_picker [data-testid="column"]:hover .wx-day-card {
     border-color: rgba(255, 255, 255, 0.2) !important;
     background: rgba(17, 24, 38, 0.62) !important;
 }
@@ -690,50 +655,64 @@ def _weather_day_card(day: dict, selected: bool) -> str:
     """
 
 
+def _coerce_overview_date(val):
+    """Normalize session/query values to datetime.date (widgets may store strings)."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, date):
+        return val
+    if isinstance(val, str):
+        try:
+            return datetime.strptime(val[:10], "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return None
+
+
+def _get_selected_overview_day(valid_dates: set):
+    """Read selected day from session; migrate legacy overview_day key."""
+    if "selected_overview_day" not in st.session_state and "overview_day" in st.session_state:
+        st.session_state.selected_overview_day = st.session_state.overview_day
+    picked = _coerce_overview_date(st.session_state.get("selected_overview_day"))
+    if picked is None or picked not in valid_dates:
+        picked = datetime.now().date()
+        st.session_state.selected_overview_day = picked
+    else:
+        st.session_state.selected_overview_day = picked
+    return picked
+
+
 def _sync_overview_day_query(valid_dates: set) -> None:
-    """Apply ?overview_day=YYYY-MM-DD from See Graph links."""
+    """Apply ?overview_day=YYYY-MM-DD from deep links."""
     raw = st.query_params.get("overview_day")
     if not raw:
         return
-    try:
-        picked = datetime.strptime(str(raw), "%Y-%m-%d").date()
-        if picked in valid_dates:
-            st.session_state.overview_day = picked
-    except ValueError:
-        pass
+    picked = _coerce_overview_date(str(raw))
+    if picked is not None and picked in valid_dates:
+        st.session_state.selected_overview_day = picked
 
 
-def _select_overview_day(day_date):
-    st.session_state.overview_day = day_date
-
-
-def _overview_day_button_key(day_date) -> str:
-    return f"overview_day_{day_date.strftime('%Y_%m_%d')}"
+def _see_graph_button_key(day_date) -> str:
+    return f"see_graph_{day_date.strftime('%Y_%m_%d')}"
 
 
 def render_day_card_picker(days: list, selected_date) -> None:
-    """Day cards (HTML) + Streamlit buttons for reliable clicks; styled grey via theme/CSS."""
-    day_cols = st.columns(len(days))
-    for col, day in zip(day_cols, days):
-        with col:
-            is_selected = day["date"] == selected_date
-            st.markdown(_weather_day_card(day, is_selected), unsafe_allow_html=True)
-            st.button(
-                "\u200b",
-                key=f"day_card_{day['date'].strftime('%Y_%m_%d')}",
-                on_click=_select_overview_day,
-                kwargs={"day_date": day["date"]},
-                use_container_width=True,
-                type="secondary",
-            )
-            st.button(
-                "See Graph →",
-                key=_overview_day_button_key(day["date"]),
-                on_click=_select_overview_day,
-                kwargs={"day_date": day["date"]},
-                use_container_width=True,
-                type="secondary",
-            )
+    """Glass day cards + one See Graph button per day (updates selected_overview_day)."""
+    with st.container(key="overview_day_picker"):
+        day_cols = st.columns(len(days))
+        for col, day in zip(day_cols, days):
+            with col:
+                is_selected = day["date"] == selected_date
+                st.markdown(_weather_day_card(day, is_selected), unsafe_allow_html=True)
+                if st.button(
+                    "See Graph →",
+                    key=_see_graph_button_key(day["date"]),
+                    use_container_width=True,
+                    type="secondary",
+                ):
+                    st.session_state.selected_overview_day = day["date"]
 
 
 def build_overview_days(df, predictions, current_aqi, forecast_hourly=None):
@@ -1271,18 +1250,11 @@ if "Overview" in page:
 
     # ── Day picker + 24-hour chart (click a day to update the graph) ──
     overview_days = build_overview_days(df, predictions, current_aqi, forecast_hourly)
-    if "overview_day" not in st.session_state:
-        st.session_state.overview_day = datetime.now().date()
     valid_dates = {d["date"] for d in overview_days}
-    if st.session_state.overview_day not in valid_dates:
-        st.session_state.overview_day = datetime.now().date()
     _sync_overview_day_query(valid_dates)
-
-    st.markdown('<div class="dash-day-wrap">', unsafe_allow_html=True)
-    render_day_card_picker(overview_days, st.session_state.overview_day)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    selected_date = st.session_state.overview_day
+    selected_date = _get_selected_overview_day(valid_dates)
+    render_day_card_picker(overview_days, selected_date)
+    selected_date = _get_selected_overview_day(valid_dates)
     selected_meta = next(d for d in overview_days if d["date"] == selected_date)
 
     st.markdown('<div class="dash-metric-tabs">', unsafe_allow_html=True)
