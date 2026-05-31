@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, timezone
 
 import hopsworks
 import joblib
@@ -165,6 +166,11 @@ if __name__ == "__main__":
         print("  → SHAP and LIME summaries saved in metrics.json")
     except Exception as exc:
         print(f"  → Explainability skipped: {exc}")
+
+    clean = df.dropna()
+    metrics_report["trained_at"] = datetime.now(timezone.utc).isoformat()
+    metrics_report["data_through"] = pd.Timestamp(clean["timestamp"].max()).isoformat()
+    metrics_report["total_samples"] = len(clean)
 
     print("\nSaving best model and metrics...")
     save_model(model, model_name, metrics_report, project)

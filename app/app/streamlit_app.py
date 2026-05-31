@@ -9,7 +9,7 @@ import joblib
 import hopsworks
 import os
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -722,7 +722,7 @@ def _read_json(path):
     return None
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_resource(show_spinner=False, ttl=3600)
 def load_model_and_project():
     project = hopsworks.login(
         host="eu-west.cloud.hopsworks.ai",
@@ -732,6 +732,7 @@ def load_model_and_project():
     mr = project.get_model_registry()
     version = int(MODEL_VERSION) if MODEL_VERSION else None
     model_hw = mr.get_model("aqi_predictor", version=version)
+    registry_version = getattr(model_hw, "version", version)
     model_dir = model_hw.download()
 
     metrics = _read_json(os.path.join(model_dir, "metrics.json"))
@@ -754,7 +755,35 @@ def load_model_and_project():
         if metrics is None:
             metrics = _read_json(os.path.join(LOCAL_MODEL_DIR, "metrics.json"))
 
-    return model, project, metrics, model_dir
+    if metrics is not None and registry_version is not None:
+        metrics["registry_version"] = registry_version
+
+    return model, project, metrics, model_dir, registry_version
+
+
+def _metrics_provenance_text(metrics: dict | None, model_dir: str | None) -> str:
+    """Explain where model comparison numbers come from (last training run)."""
+    if not metrics:
+        return "No metrics.json — run training_pipeline.py or wait for the daily Train workflow."
+    parts = []
+    if metrics.get("registry_version") is not None:
+        parts.append(f"Hopsworks registry v{metrics['registry_version']}")
+    if metrics.get("trained_at"):
+        parts.append(f"trained {metrics['trained_at'][:19].replace('T', ' ')} UTC")
+    elif model_dir:
+        mp = os.path.join(model_dir, "metrics.json")
+        if os.path.isfile(mp):
+            mtime = datetime.fromtimestamp(os.path.getmtime(mp), tz=timezone.utc)
+            parts.append(f"metrics from {mtime.strftime('%Y-%m-%d %H:%M')} UTC")
+    if metrics.get("data_through"):
+        parts.append(f"data through {str(metrics['data_through'])[:10]}")
+    train_n = metrics.get("train_samples")
+    test_n = metrics.get("test_samples")
+    if train_n is not None and test_n is not None:
+        parts.append(f"holdout test: {test_n} rows ({train_n} train)")
+    parts.append("80/20 split, random_state=42")
+    return " · ".join(parts)
+
 
 @st.cache_data(show_spinner=False, ttl=3600)
 def get_features():
@@ -858,9 +887,10 @@ def predict_days(model, last_row, n=7):
 
 # ── LOAD DATA ─────────────────────────────────────────────────
 model_metrics = None
+model_registry_version = None
 with st.spinner("🌫️ Loading AQI data..."):
     try:
-        model, project, model_metrics, model_dir = load_model_and_project()
+        model, project, model_metrics, model_dir, model_registry_version = load_model_and_project()
         df = get_features()
         current = get_current_aqi()
         try:
@@ -907,6 +937,10 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     st.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:.1em;color:#3d4f6a;text-transform:uppercase;margin-bottom:.4rem;">Main</div>', unsafe_allow_html=True)
+
+    if st.button("↻ Refresh model & metrics", use_container_width=True, help="Reload latest training results from Hopsworks (after Train Pipeline runs)."):
+        load_model_and_project.clear()
+        st.rerun()
 
     page = st.radio("", [
         "⊞  Overview",
@@ -1172,48 +1206,56 @@ if "Overview" in page:
         model_chips = "".join(
             f'<span style="display:inline-block;margin:.2rem .35rem .2rem 0;padding:.25rem .6rem;'
             f'border-radius:100px;font-size:.68rem;font-family:\'DM Mono\',monospace;'
-            f'border:1px solid {"rgba(0,224,170,0.35)" if k == best_key else "rgba(255,255,255,0.1)"};'
-            f'background:{"rgba(0,224,170,0.12)" if k == best_key else "rgba(255,255,255,0.04)"};'
-            f'color:{"#00e0aa" if k == best_key else "#5e7292"};">'
+            f'border:1px solid {"rgba(0,224,170,0.35)" if k == best_key else "rgba(255,255,255,0.18)"};'
+            f'background:{"rgba(0,224,170,0.12)" if k == best_key else "rgba(255,255,255,0.06)"};'
+            f'color:{"#00e0aa" if k == best_key else "#ffffff"};">'
             f'{m["display_name"]}{" ★" if k == best_key else ""}</span>'
             for k, m in ranked
         )
+        row_color = lambda is_best: "#00e0aa" if is_best else "#ffffff"
         other_rows = "".join(
-            f'<tr style="border-top:1px solid rgba(255,255,255,0.05);">'
-            f'<td style="padding:.45rem .6rem;color:{"#00e0aa" if k == best_key else "#b8c5dc"};font-weight:{"700" if k == best_key else "400"};">'
+            f'<tr style="border-top:1px solid rgba(255,255,255,0.08);color:#ffffff;">'
+            f'<td style="padding:.45rem .6rem;color:{row_color(k == best_key)};font-weight:{"700" if k == best_key else "500"};">'
             f'{m["display_name"]}{" ★ Best" if k == best_key else ""}</td>'
-            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;">{m["r2_pct"]:.1f}%</td>'
-            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;">{m["rmse"]:.2f}</td>'
-            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;">{m["mae"]:.2f}</td></tr>'
+            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;color:{row_color(k == best_key)};">{m["r2_pct"]:.1f}%</td>'
+            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;color:{row_color(k == best_key)};">{m["rmse"]:.2f}</td>'
+            f'<td style="padding:.45rem .6rem;text-align:right;font-family:\'DM Mono\',monospace;color:{row_color(k == best_key)};">{m["mae"]:.2f}</td></tr>'
             for k, m in ranked
         )
         st.markdown(f"""
         <div style="background:#0d1120;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1rem;">
           <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.85rem;">
             <div>
-              <div style="font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;color:#3d4f6a;text-transform:uppercase;margin-bottom:.35rem;">Models evaluated (5)</div>
+              <div style="font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;color:#b8c5dc;text-transform:uppercase;margin-bottom:.35rem;">Models evaluated (5)</div>
               <div>{model_chips}</div>
             </div>
             <div style="text-align:right;min-width:200px;">
-              <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;text-transform:uppercase;">Best accuracy</div>
+              <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;text-transform:uppercase;">Best accuracy</div>
               <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:#00e0aa;margin-top:.15rem;">{model_metrics["best_display_name"]}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:#5e7292;margin-top:.2rem;">
-                R² <span style="color:#d8e2f5;">{best["r2"]:.4f}</span> ({best["r2_pct"]:.1f}%)
-                · RMSE <span style="color:#d8e2f5;">{best["rmse"]:.2f}</span>
-                · MAE <span style="color:#d8e2f5;">{best["mae"]:.2f}</span>
+              <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:#d8e2f5;margin-top:.2rem;">
+                R² <span style="color:#ffffff;">{best["r2"]:.4f}</span> ({best["r2_pct"]:.1f}%)
+                · RMSE <span style="color:#ffffff;">{best["rmse"]:.2f}</span>
+                · MAE <span style="color:#ffffff;">{best["mae"]:.2f}</span>
               </div>
             </div>
           </div>
-          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;margin-bottom:.4rem;">
-            7-day forecast on Overview uses <strong style="color:#00e0aa;">{model_metrics["best_display_name"]}</strong> (highest R² on test set).
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#d8e2f5;margin-bottom:.35rem;line-height:1.5;">
+            Scores are from the <strong style="color:#ffffff;">last training run</strong> (fixed 20% holdout test set), not recalculated live each day.
+            They update when <code style="color:#b8c5dc;">training_pipeline.py</code> or the daily GitHub Train workflow completes.
           </div>
-          <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+          <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:#b8c5dc;margin-bottom:.45rem;line-height:1.45;">
+            {_metrics_provenance_text(model_metrics, model_dir)}
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#d8e2f5;margin-bottom:.4rem;">
+            7-day forecast on Overview uses <strong style="color:#00e0aa;">{model_metrics["best_display_name"]}</strong> (highest R² on that test set).
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem;color:#ffffff;">
             <thead>
-              <tr style="color:#3d4f6a;font-family:'DM Mono',monospace;font-size:.58rem;text-transform:uppercase;">
-                <th style="text-align:left;padding:.35rem .6rem;">Model</th>
-                <th style="text-align:right;padding:.35rem .6rem;">R² %</th>
-                <th style="text-align:right;padding:.35rem .6rem;">RMSE</th>
-                <th style="text-align:right;padding:.35rem .6rem;">MAE</th>
+              <tr style="color:#b8c5dc;font-family:'DM Mono',monospace;font-size:.58rem;text-transform:uppercase;">
+                <th style="text-align:left;padding:.35rem .6rem;color:#b8c5dc;">Model</th>
+                <th style="text-align:right;padding:.35rem .6rem;color:#b8c5dc;">R² %</th>
+                <th style="text-align:right;padding:.35rem .6rem;color:#b8c5dc;">RMSE</th>
+                <th style="text-align:right;padding:.35rem .6rem;color:#b8c5dc;">MAE</th>
               </tr>
             </thead>
             <tbody>{other_rows}</tbody>
@@ -1642,6 +1684,8 @@ elif "Heatmap" in page:
 # ══════════════════════════════════════════════════════════════
 elif "Model" in page:
     import plotly.graph_objects as go
+
+    st.caption(_metrics_provenance_text(model_metrics, model_dir))
 
     feature_labels = [
         'Hour', 'Day', 'Month', 'Day of week', 'PM2.5', 'PM10',
