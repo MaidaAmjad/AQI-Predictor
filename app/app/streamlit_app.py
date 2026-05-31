@@ -36,7 +36,14 @@ st.set_page_config(
 # ── GLOBAL CSS ────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Epilogue:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Epilogue:wght@300;400;500&display=swap');
+
+/* Large AQI / metric numbers */
+.aqi-num, .roboto-num {
+    font-family: 'Roboto', sans-serif !important;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
 
 html, body, [class*="css"] {
     font-family: 'Epilogue', sans-serif !important;
@@ -147,9 +154,10 @@ header [data-testid="stToolbar"] {
     color: #5e7292 !important;
 }
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
-    font-family: 'Syne', sans-serif !important;
-    font-weight: 800 !important;
+    font-family: 'Roboto', sans-serif !important;
+    font-weight: 700 !important;
     font-size: 1.8rem !important;
+    font-variant-numeric: tabular-nums !important;
     color: #d8e2f5 !important;
 }
 [data-testid="stMetricDelta"] { font-size: .72rem !important; }
@@ -356,11 +364,12 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     gap: 0.75rem;
 }
 .wx-aqi {
-    font-family: Syne, sans-serif;
-    font-weight: 800;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
     font-size: 2.15rem;
     line-height: 1;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
 }
 .wx-cat {
     margin-top: 0.2rem;
@@ -927,7 +936,7 @@ with st.sidebar:
         <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;margin-top:.2rem;">31.5204°N · 74.3587°E</div>
       </div>
       <div style="background:#0d1120;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:.65rem .85rem;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.5rem;color:{aqi_color};">{current_aqi}</span>
+        <span class="aqi-num" style="font-weight:700;font-size:1.5rem;color:{aqi_color};">{current_aqi}</span>
         <div style="text-align:right;">
           <div style="font-size:.65rem;color:{aqi_color};font-weight:600;">{emoji} {category[:10]}</div>
           <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;">US AQI · NOW</div>
@@ -1061,7 +1070,7 @@ if "Overview" in page:
     <div class="aqi-big-card">
       <div style="font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.14em;color:#3d4f6a;text-transform:uppercase;margin-bottom:.4rem;">US Air Quality Index · Lahore</div>
       <div style="display:flex;align-items:flex-end;gap:1.5rem;margin-bottom:1rem;">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:5rem;line-height:1;letter-spacing:-.05em;color:{aqi_color};">{current_aqi}</div>
+        <div class="aqi-num" style="font-weight:700;font-size:5rem;line-height:1;letter-spacing:-.03em;color:{aqi_color};">{current_aqi}</div>
         <div style="padding-bottom:.5rem;">
           <div style="font-size:1rem;font-weight:600;color:{aqi_color};">{emoji} {category}</div>
           <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:#5e7292;">EU AQI: {eu_aqi} · Updated {datetime.now().strftime('%H:%M, %b %d')}</div>
@@ -1074,11 +1083,11 @@ if "Overview" in page:
         <span>0 Good</span><span>50</span><span>100</span><span>150</span><span>200</span><span>300+ Hazardous</span>
       </div>
       <div style="display:flex;gap:2rem;margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);">
-        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:#00e0aa;">EU {eu_aqi}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;">EUROPEAN AQI</div></div>
-        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;">{int(df.tail(168)['us_aqi'].mean())}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;">7-DAY AVG</div></div>
-        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:{get_aqi_color(int(predictions.iloc[1]['Predicted AQI']))};">{int(predictions.iloc[1]['Predicted AQI'])}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;">TOMORROW</div></div>
-        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:#f87171;">{int(df['us_aqi'].max())}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;">90-DAY HIGH</div></div>
-        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:#4ade80;">{int(df['us_aqi'].min())}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;">90-DAY LOW</div></div>
+        <div><div class="aqi-num" style="font-weight:700;font-size:1rem;color:#00e0aa;">EU {eu_aqi}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">EUROPEAN AQI</div></div>
+        <div><div class="aqi-num" style="font-weight:700;font-size:1rem;color:#ffffff;">{int(df.tail(168)['us_aqi'].mean())}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">7-DAY AVG</div></div>
+        <div><div class="aqi-num" style="font-weight:700;font-size:1rem;color:{get_aqi_color(int(predictions.iloc[1]['Predicted AQI']))};">{int(predictions.iloc[1]['Predicted AQI'])}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">TOMORROW</div></div>
+        <div><div class="aqi-num" style="font-weight:700;font-size:1rem;color:#f87171;">{int(df['us_aqi'].max())}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">90-DAY HIGH</div></div>
+        <div><div class="aqi-num" style="font-weight:700;font-size:1rem;color:#4ade80;">{int(df['us_aqi'].min())}</div><div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">90-DAY LOW</div></div>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1285,7 +1294,7 @@ if "Overview" in page:
             st.markdown(f"""
             <div class="pol-card">
               <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.35rem;">{name}</div>
-              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.45rem;color:{color};letter-spacing:-.02em;">{val}</div>
+              <div class="aqi-num" style="font-weight:700;font-size:1.45rem;color:{color};letter-spacing:-.02em;">{val}</div>
               <div style="font-size:.6rem;color:#3d4f6a;">{unit}</div>
               <div style="margin-top:.5rem;height:3px;background:#161f32;border-radius:100px;overflow:hidden;">
                 <div style="height:100%;width:{pct}%;background:{color};border-radius:100px;"></div>
@@ -1436,7 +1445,7 @@ elif "Forecast" in page:
             <div style="display:flex;align-items:center;gap:.8rem;padding:.75rem 1rem;background:#111826;border:1px solid rgba(255,255,255,0.06);border-radius:11px;margin-bottom:.5rem;">
               <div style="width:80px;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;">{row['Date'].split(',')[0]}<div style="font-family:'DM Mono',monospace;font-size:.55rem;color:#5e7292;">{row['Date'].split(', ')[-1] if ', ' in row['Date'] else ''}</div></div>
               <div style="flex:1;height:3px;background:#161f32;border-radius:100px;overflow:hidden;"><div style="height:100%;width:{pct}%;background:{c};border-radius:100px;"></div></div>
-              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;color:{c};width:32px;text-align:right;">{int(row['Predicted AQI'])}</div>
+              <div class="aqi-num" style="font-weight:700;font-size:.95rem;color:{c};width:32px;text-align:right;">{int(row['Predicted AQI'])}</div>
               <div style="font-size:.58rem;padding:.15rem .5rem;border-radius:100px;background:{c}22;color:{c};font-weight:700;width:60px;text-align:center;">{row['Status']} {row['Category'][:6]}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -1572,7 +1581,7 @@ elif "Pollutants" in page:
         with col:
             st.markdown(f"""<div class="pol-card">
               <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;text-transform:uppercase;margin-bottom:.3rem;">{name}</div>
-              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;color:{color};">{val}</div>
+              <div class="aqi-num" style="font-weight:700;font-size:1.4rem;color:{color};">{val}</div>
               <div style="font-size:.58rem;color:#3d4f6a;">{unit}</div>
             </div>""", unsafe_allow_html=True)
 
