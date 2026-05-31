@@ -501,6 +501,35 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
 .sec-lbl {
     color: #b8c5dc !important;
 }
+/* AQI bar chart legend — must beat project-wide span { color: #d8e2f5 } */
+.aqi-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem 1.1rem;
+    margin: 0.25rem 0 1rem;
+    font-size: 0.72rem;
+    color: #d8e2f5 !important;
+}
+.aqi-chart-legend .aqi-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #d8e2f5 !important;
+}
+.aqi-chart-legend .aqi-swatch {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+}
+.aqi-chart-legend .aqi-swatch-good { background: #4ade80 !important; background-color: #4ade80 !important; }
+.aqi-chart-legend .aqi-swatch-moderate { background: #f5c518 !important; background-color: #f5c518 !important; }
+.aqi-chart-legend .aqi-swatch-poor { background: #ff7043 !important; background-color: #ff7043 !important; }
+.aqi-chart-legend .aqi-swatch-unhealthy { background: #f87171 !important; background-color: #f87171 !important; }
+.aqi-chart-legend .aqi-swatch-very-unhealthy { background: #a78bfa !important; background-color: #a78bfa !important; }
+.aqi-chart-legend .aqi-swatch-hazardous { background: #7c3aed !important; background-color: #7c3aed !important; }
 .wx-day-num, .wx-day-name {
     color: #b8c5dc !important;
 }
@@ -1340,13 +1369,13 @@ if "Overview" in page:
 
     if metric == "us_aqi":
         legend_html = """
-        <div style="display:flex;flex-wrap:wrap;gap:.65rem 1.1rem;margin:.25rem 0 1rem;font-size:.72rem;color:#d8e2f5;">
-          <span><span style="color:#4ade80;">●</span> Good</span>
-          <span><span style="color:#f5c518;">●</span> Moderate</span>
-          <span><span style="color:#ff7043;">●</span> Poor</span>
-          <span><span style="color:#f87171;">●</span> Unhealthy</span>
-          <span><span style="color:#a78bfa;">●</span> Very unhealthy</span>
-          <span><span style="color:#7c3aed;">●</span> Hazardous</span>
+        <div class="aqi-chart-legend">
+          <span class="aqi-legend-item"><span class="aqi-swatch aqi-swatch-good"></span>Good</span>
+          <span class="aqi-legend-item"><span class="aqi-swatch aqi-swatch-moderate"></span>Moderate</span>
+          <span class="aqi-legend-item"><span class="aqi-swatch aqi-swatch-poor"></span>Poor</span>
+          <span class="aqi-legend-item"><span class="aqi-swatch aqi-swatch-unhealthy"></span>Unhealthy</span>
+          <span class="aqi-legend-item"><span class="aqi-swatch aqi-swatch-very-unhealthy"></span>Very unhealthy</span>
+          <span class="aqi-legend-item"><span class="aqi-swatch aqi-swatch-hazardous"></span>Hazardous</span>
         </div>"""
         st.markdown(legend_html, unsafe_allow_html=True)
 
