@@ -105,8 +105,54 @@ header [data-testid="stToolbar"] {
     background-color: #0a0d16 !important;
     border-right: 1px solid rgba(255,255,255,0.055) !important;
 }
-[data-testid="stSidebar"] * { color: #d8e2f5 !important; }
 [data-testid="stSidebarNav"] { display: none; }
+
+/* Sidebar — refresh / action buttons */
+[data-testid="stSidebar"] [data-testid="stButton"] {
+    width: 100% !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] > div {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button,
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="secondary"],
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] {
+    width: 100% !important;
+    min-height: 2.4rem !important;
+    padding: 0.5rem 0.75rem !important;
+    background: #2a3142 !important;
+    background-color: #2a3142 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    font-family: 'Epilogue', sans-serif !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    opacity: 1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button:hover,
+[data-testid="stSidebar"] [data-testid="stButton"] button:focus {
+    background: #353d52 !important;
+    background-color: #353d52 !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button:active {
+    background: #1e2430 !important;
+    background-color: #1e2430 !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button p,
+[data-testid="stSidebar"] [data-testid="stButton"] button span,
+[data-testid="stSidebar"] [data-testid="stButton"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stButton"] [data-testid="stMarkdownContainer"] p {
+    color: #ffffff !important;
+    background: transparent !important;
+}
 
 /* Radio as nav */
 [data-testid="stSidebar"] .stRadio > div {
@@ -392,23 +438,45 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     border-radius: 100px;
     min-height: 10px;
 }
+/* Pollutant / metric pills (Overview) — st-key from key="overview_metric_radio" */
+.st-key-overview_metric_radio [data-testid="stRadio"] > div,
 .dash-metric-tabs [data-testid="stRadio"] > div {
     flex-direction: row !important;
     flex-wrap: wrap !important;
     gap: 0.35rem !important;
 }
+.st-key-overview_metric_radio [data-testid="stRadio"] label,
 .dash-metric-tabs [data-testid="stRadio"] label {
     background: #0d1120 !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
     border-radius: 100px !important;
     padding: 0.35rem 0.85rem !important;
     font-size: 0.75rem !important;
+    color: #ffffff !important;
 }
+.st-key-overview_metric_radio [data-testid="stRadio"] label [data-testid="stMarkdownContainer"],
+.st-key-overview_metric_radio [data-testid="stRadio"] label [data-testid="stMarkdownContainer"] p,
+.st-key-overview_metric_radio [data-testid="stRadio"] label span,
+.st-key-overview_metric_radio [data-testid="stRadio"] label div,
+.dash-metric-tabs [data-testid="stRadio"] label [data-testid="stMarkdownContainer"],
+.dash-metric-tabs [data-testid="stRadio"] label [data-testid="stMarkdownContainer"] p,
+.dash-metric-tabs [data-testid="stRadio"] label span,
+.dash-metric-tabs [data-testid="stRadio"] label div {
+    color: #ffffff !important;
+}
+.st-key-overview_metric_radio [data-testid="stRadio"] label[data-checked="true"],
+.st-key-overview_metric_radio [data-testid="stRadio"] label[aria-checked="true"],
 .dash-metric-tabs [data-testid="stRadio"] label[data-checked="true"],
 .dash-metric-tabs [data-testid="stRadio"] label[aria-checked="true"] {
     background: rgba(245,197,24,0.15) !important;
     border-color: rgba(245,197,24,0.45) !important;
-    color: #f5c518 !important;
+    color: #ffffff !important;
+}
+.st-key-overview_metric_radio [data-testid="stRadio"] label[data-checked="true"] p,
+.st-key-overview_metric_radio [data-testid="stRadio"] label[aria-checked="true"] p,
+.dash-metric-tabs [data-testid="stRadio"] label[data-checked="true"] [data-testid="stMarkdownContainer"] p,
+.dash-metric-tabs [data-testid="stRadio"] label[aria-checked="true"] [data-testid="stMarkdownContainer"] p {
+    color: #ffffff !important;
 }
 .dash-conditions {
     background: #0d1120;
@@ -945,9 +1013,15 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:.1em;color:#3d4f6a;text-transform:uppercase;margin-bottom:.4rem;">Main</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:.1em;color:#b8c5dc;text-transform:uppercase;margin-bottom:.4rem;">Main</div>', unsafe_allow_html=True)
 
-    if st.button("↻ Refresh model & metrics", use_container_width=True, help="Reload latest training results from Hopsworks (after Train Pipeline runs)."):
+    if st.button(
+        "↻ Refresh model & metrics",
+        key="refresh_model_metrics",
+        use_container_width=True,
+        type="secondary",
+        help="Reload latest training results from Hopsworks (after Train Pipeline runs).",
+    ):
         load_model_and_project.clear()
         st.rerun()
 
@@ -1126,6 +1200,22 @@ if "Overview" in page:
         horizontal=True,
         label_visibility="collapsed",
         key="overview_metric_radio",
+    )
+    st.markdown(
+        """
+        <style>
+        .st-key-overview_metric_radio label,
+        .st-key-overview_metric_radio label p,
+        .st-key-overview_metric_radio [data-testid="stMarkdownContainer"] p {
+            color: #ffffff !important;
+        }
+        .st-key-overview_metric_radio label[data-checked="true"],
+        .st-key-overview_metric_radio label[aria-checked="true"] {
+            color: #ffffff !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
     )
     st.markdown("</div>", unsafe_allow_html=True)
     metric = metric_cols[metric_labels.index(chosen_label)]
