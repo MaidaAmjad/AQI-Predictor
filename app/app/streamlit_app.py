@@ -164,7 +164,7 @@ header [data-testid="stToolbar"] {
     padding: .55rem .9rem !important;
     border-radius: 9px !important;
     font-size: .82rem !important;
-    color: #5e7292 !important;
+    color: #c5d4ea !important;
     cursor: pointer;
     transition: all .18s;
     border: 1px solid transparent !important;
@@ -197,7 +197,7 @@ header [data-testid="stToolbar"] {
     font-size: .6rem !important;
     letter-spacing: .08em !important;
     text-transform: uppercase !important;
-    color: #5e7292 !important;
+    color: #b8c5dc !important;
 }
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
     font-family: 'Roboto', sans-serif !important;
@@ -262,7 +262,7 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     font-family: 'DM Mono', monospace;
     font-size: .62rem;
     letter-spacing: .12em;
-    color: #3d4f6a;
+    color: #b8c5dc;
     text-transform: uppercase;
     margin-bottom: .5rem;
     margin-top: 1rem;
@@ -400,7 +400,7 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
 .wx-day-num, .wx-day-name {
     font-family: 'DM Mono', monospace;
     font-size: 0.72rem;
-    color: #5e7292;
+    color: #b8c5dc;
     letter-spacing: 0.02em;
 }
 .wx-day-body {
@@ -484,8 +484,76 @@ hr { border-color: rgba(255,255,255,0.06) !important; }
     border-radius: 14px;
     padding: 1rem 1.15rem;
     font-size: 0.88rem;
-    color: #8fa3c4;
+    color: #d8e2f5;
     line-height: 1.55;
+}
+
+/* ── Project-wide readable text (no black/grey on dark bg) ── */
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] li,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] span,
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] p,
+.stCaption,
+[data-testid="stWidgetLabel"],
+[data-testid="stMetricLabel"],
+[data-testid="stMetricLabel"] p {
+    color: #d8e2f5 !important;
+}
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span {
+    color: #d8e2f5;
+}
+[data-testid="stSidebar"] .stRadio label {
+    color: #c5d4ea !important;
+}
+[data-testid="stSidebar"] .stRadio label [data-testid="stMarkdownContainer"] p {
+    color: #c5d4ea !important;
+}
+[data-testid="stSidebar"] .stRadio label[data-checked="true"],
+[data-testid="stSidebar"] .stRadio label[aria-checked="true"],
+[data-testid="stSidebar"] .stRadio label[data-checked="true"] p,
+[data-testid="stSidebar"] .stRadio label[aria-checked="true"] p {
+    color: #00e0aa !important;
+}
+[data-testid="metric-container"] label,
+[data-testid="metric-container"] [data-testid="stMetricLabel"],
+[data-testid="metric-container"] [data-testid="stMetricLabel"] p {
+    color: #b8c5dc !important;
+}
+[data-testid="stMetricDelta"],
+[data-testid="stMetricDelta"] svg {
+    color: #c5d4ea !important;
+}
+.sec-lbl {
+    color: #b8c5dc !important;
+}
+.wx-day-num, .wx-day-name {
+    color: #b8c5dc !important;
+}
+[data-testid="stDataFrame"] div,
+[data-testid="stDataFrame"] span {
+    color: #d8e2f5 !important;
+}
+[data-testid="stSelectbox"] label,
+[data-testid="stSelectbox"] [data-testid="stMarkdownContainer"] p {
+    color: #d8e2f5 !important;
+}
+/* Plotly axes, titles, legends */
+.js-plotly-plot .xtick text,
+.js-plotly-plot .ytick text,
+.js-plotly-plot .legend text,
+.js-plotly-plot .gtitle,
+.js-plotly-plot .ytitle,
+.js-plotly-plot .xtitle,
+.js-plotly-plot text {
+    fill: #b8c5dc !important;
+}
+.js-plotly-plot .legend .traces text {
+    fill: #d8e2f5 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -513,17 +581,28 @@ def get_aqi_category(aqi):
     else: return "Hazardous", "☠️"
 
 def get_plotly_layout(title="", height=300):
+    _axis = dict(
+        gridcolor='rgba(255,255,255,0.06)',
+        zerolinecolor='rgba(255,255,255,0.06)',
+        tickfont=dict(color='#b8c5dc', size=10),
+        titlefont=dict(color='#d8e2f5', size=11),
+        color='#b8c5dc',
+    )
     return dict(
-        title=title,
+        title=dict(text=title, font=dict(color='#d8e2f5', size=12)) if title else None,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#5e7292', family='DM Mono, monospace', size=10),
+        font=dict(color='#b8c5dc', family='DM Mono, monospace', size=10),
         height=height,
         margin=dict(l=40, r=20, t=30, b=40),
-        xaxis=dict(gridcolor='rgba(255,255,255,0.04)', zerolinecolor='rgba(255,255,255,0.04)'),
-        yaxis=dict(gridcolor='rgba(255,255,255,0.04)', zerolinecolor='rgba(255,255,255,0.04)'),
-        legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.06)'),
-        showlegend=True
+        xaxis=dict(**_axis),
+        yaxis=dict(**_axis),
+        legend=dict(
+            bgcolor='rgba(0,0,0,0)',
+            bordercolor='rgba(255,255,255,0.06)',
+            font=dict(color='#d8e2f5', size=10),
+        ),
+        showlegend=True,
     )
 
 def get_aqi_category_short(aqi):
@@ -1001,13 +1080,13 @@ with st.sidebar:
           <div style="width:6px;height:6px;background:#00e0aa;border-radius:50%;"></div>
           <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;color:#00e0aa;">Lahore, Pakistan</span>
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;margin-top:.2rem;">31.5204°N · 74.3587°E</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#d8e2f5;margin-top:.2rem;">31.5204°N · 74.3587°E</div>
       </div>
       <div style="background:#0d1120;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:.65rem .85rem;display:flex;align-items:center;justify-content:space-between;">
         <span class="aqi-num" style="font-weight:700;font-size:1.5rem;color:{aqi_color};">{current_aqi}</span>
         <div style="text-align:right;">
           <div style="font-size:.65rem;color:{aqi_color};font-weight:600;">{emoji} {category[:10]}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;">US AQI · NOW</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#d8e2f5;">US AQI · NOW</div>
         </div>
       </div>
     </div>
@@ -1039,7 +1118,7 @@ with st.sidebar:
     ], label_visibility="collapsed")
 
     st.markdown(f"""
-    <div style="margin-top:auto;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;">
+    <div style="margin-top:auto;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">
       Open-Meteo · Hopsworks · v1.0<br>Updated {datetime.now().strftime('%H:%M, %b %d')}
     </div>
     """, unsafe_allow_html=True)
@@ -1142,18 +1221,18 @@ if "Overview" in page:
     pct = min(current_aqi / 300 * 100, 100)
     st.markdown(f"""
     <div class="aqi-big-card">
-      <div style="font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.14em;color:#3d4f6a;text-transform:uppercase;margin-bottom:.4rem;">US Air Quality Index · Lahore</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.14em;color:#b8c5dc;text-transform:uppercase;margin-bottom:.4rem;">US Air Quality Index · Lahore</div>
       <div style="display:flex;align-items:flex-end;gap:1.5rem;margin-bottom:1rem;">
         <div class="aqi-num" style="font-weight:700;font-size:5rem;line-height:1;letter-spacing:-.03em;color:{aqi_color};">{current_aqi}</div>
         <div style="padding-bottom:.5rem;">
           <div style="font-size:1rem;font-weight:600;color:{aqi_color};">{emoji} {category}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:#5e7292;">EU AQI: {eu_aqi} · Updated {datetime.now().strftime('%H:%M, %b %d')}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:#d8e2f5;">EU AQI: {eu_aqi} · Updated {datetime.now().strftime('%H:%M, %b %d')}</div>
         </div>
       </div>
       <div style="width:100%;height:7px;border-radius:100px;background:linear-gradient(90deg,#4ade80,#f5c518,#ff7043,#f87171,#a78bfa);position:relative;margin:.4rem 0 .3rem;">
         <div style="position:absolute;top:50%;left:{pct:.0f}%;transform:translate(-50%,-50%);width:13px;height:13px;background:#fff;border-radius:50%;box-shadow:0 0 0 3px {aqi_color}66;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:.58rem;color:#3d4f6a;">
+      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:.58rem;color:#b8c5dc;">
         <span>0 Good</span><span>50</span><span>100</span><span>150</span><span>200</span><span>300+ Hazardous</span>
       </div>
       <div style="display:flex;gap:2rem;margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);">
@@ -1274,7 +1353,7 @@ if "Overview" in page:
 
     if metric == "us_aqi":
         legend_html = """
-        <div style="display:flex;flex-wrap:wrap;gap:.65rem 1.1rem;margin:.25rem 0 1rem;font-size:.72rem;color:#5e7292;">
+        <div style="display:flex;flex-wrap:wrap;gap:.65rem 1.1rem;margin:.25rem 0 1rem;font-size:.72rem;color:#d8e2f5;">
           <span><span style="color:#4ade80;">●</span> Good</span>
           <span><span style="color:#f5c518;">●</span> Moderate</span>
           <span><span style="color:#ff7043;">●</span> Poor</span>
@@ -1383,9 +1462,9 @@ if "Overview" in page:
         with col:
             st.markdown(f"""
             <div class="pol-card">
-              <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.35rem;">{name}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#d8e2f5;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.35rem;">{name}</div>
               <div class="aqi-num" style="font-weight:700;font-size:1.45rem;color:{color};letter-spacing:-.02em;">{val}</div>
-              <div style="font-size:.6rem;color:#3d4f6a;">{unit}</div>
+              <div style="font-size:.6rem;color:#b8c5dc;">{unit}</div>
               <div style="margin-top:.5rem;height:3px;background:#161f32;border-radius:100px;overflow:hidden;">
                 <div style="height:100%;width:{pct}%;background:{color};border-radius:100px;"></div>
               </div>
@@ -1533,7 +1612,7 @@ elif "Forecast" in page:
             pct = min(int(row["Predicted AQI"]) / 300 * 100, 100)
             st.markdown(f"""
             <div style="display:flex;align-items:center;gap:.8rem;padding:.75rem 1rem;background:#111826;border:1px solid rgba(255,255,255,0.06);border-radius:11px;margin-bottom:.5rem;">
-              <div style="width:80px;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;">{row['Date'].split(',')[0]}<div style="font-family:'DM Mono',monospace;font-size:.55rem;color:#5e7292;">{row['Date'].split(', ')[-1] if ', ' in row['Date'] else ''}</div></div>
+              <div style="width:80px;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;">{row['Date'].split(',')[0]}<div style="font-family:'DM Mono',monospace;font-size:.55rem;color:#d8e2f5;">{row['Date'].split(', ')[-1] if ', ' in row['Date'] else ''}</div></div>
               <div style="flex:1;height:3px;background:#161f32;border-radius:100px;overflow:hidden;"><div style="height:100%;width:{pct}%;background:{c};border-radius:100px;"></div></div>
               <div class="aqi-num" style="font-weight:700;font-size:.95rem;color:{c};width:32px;text-align:right;">{int(row['Predicted AQI'])}</div>
               <div style="font-size:.58rem;padding:.15rem .5rem;border-radius:100px;background:{c}22;color:{c};font-weight:700;width:60px;text-align:center;">{row['Status']} {row['Category'][:6]}</div>
@@ -1598,8 +1677,8 @@ elif "Charts" in page:
         layout = get_plotly_layout(height=300)
         layout['polar'] = dict(
             bgcolor='rgba(0,0,0,0)',
-            radialaxis=dict(visible=True, gridcolor='rgba(255,255,255,0.05)', color='#3d4f6a'),
-            angularaxis=dict(gridcolor='rgba(255,255,255,0.05)', color='#5e7292')
+            radialaxis=dict(visible=True, gridcolor='rgba(255,255,255,0.05)', color='#b8c5dc'),
+            angularaxis=dict(gridcolor='rgba(255,255,255,0.05)', color='#b8c5dc')
         )
         fig.update_layout(**layout)
         st.plotly_chart(fig, use_container_width=True)
@@ -1670,9 +1749,9 @@ elif "Pollutants" in page:
     for col, name, val, unit, color in pollutants:
         with col:
             st.markdown(f"""<div class="pol-card">
-              <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#5e7292;text-transform:uppercase;margin-bottom:.3rem;">{name}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:#d8e2f5;text-transform:uppercase;margin-bottom:.3rem;">{name}</div>
               <div class="aqi-num" style="font-weight:700;font-size:1.4rem;color:{color};">{val}</div>
-              <div style="font-size:.58rem;color:#3d4f6a;">{unit}</div>
+              <div style="font-size:.58rem;color:#b8c5dc;">{unit}</div>
             </div>""", unsafe_allow_html=True)
 
     st.markdown('<div class="sec-lbl" style="margin-top:1.2rem;">All Pollutants — 24h Trend</div>', unsafe_allow_html=True)
@@ -1741,7 +1820,7 @@ elif "Heatmap" in page:
         colorscale=[[0,'#4ade80'],[0.33,'#f5c518'],[0.66,'#ff7043'],[1,'#a78bfa']],
         hovertemplate='%{y} %{x}<br>Avg AQI: %{z:.0f}<extra></extra>',
         showscale=True,
-        colorbar=dict(tickfont=dict(color='#5e7292'), outlinecolor='rgba(0,0,0,0)')
+        colorbar=dict(tickfont=dict(color='#b8c5dc'), outlinecolor='rgba(0,0,0,0)')
     ))
     layout = get_plotly_layout(height=280)
     layout['xaxis']['showgrid'] = False
@@ -1869,7 +1948,7 @@ elif "Model" in page:
                 fig_shap.update_layout(**get_plotly_layout(height=320))
                 st.plotly_chart(fig_shap, use_container_width=True)
                 st.markdown(
-                    f'<div style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:#5e7292;">'
+                    f'<div style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:#d8e2f5;">'
                     f'Base prediction (expected AQI): <strong style="color:#d8e2f5;">'
                     f'{shap_data["base_value"]}</strong> · '
                     f'{shap_data["samples_explained"]} test samples</div>',
@@ -1900,7 +1979,7 @@ elif "Model" in page:
                 fig_lime.update_layout(**get_plotly_layout(height=320))
                 st.plotly_chart(fig_lime, use_container_width=True)
                 st.markdown(
-                    f'<div style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:#5e7292;">'
+                    f'<div style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:#d8e2f5;">'
                     f'Predicted AQI: <strong style="color:#d8e2f5;">{lime_data["prediction"]}</strong> · '
                     f'LIME intercept: {lime_data["intercept"]}</div>',
                     unsafe_allow_html=True,
@@ -2038,7 +2117,7 @@ elif "Health" in page:
         ]
         for icon, text in tips:
             st.markdown(f"""
-            <div style="display:flex;align-items:flex-start;gap:.7rem;padding:.75rem 1rem;background:#111826;border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:.5rem;font-size:.8rem;color:#5e7292;line-height:1.55;">
+            <div style="display:flex;align-items:flex-start;gap:.7rem;padding:.75rem 1rem;background:#111826;border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:.5rem;font-size:.8rem;color:#d8e2f5;line-height:1.55;">
               <span style="font-size:.95rem;flex-shrink:0;">{icon}</span>{text}
             </div>
             """, unsafe_allow_html=True)
