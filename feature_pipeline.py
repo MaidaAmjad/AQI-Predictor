@@ -76,30 +76,16 @@ def connect_feature_group():
         description="AQI features for Lahore from Open-Meteo",
     )
 
-def _last_us_aqi(fg):
-    """Previous US AQI for this city, if the feature group already has rows."""
-    try:
-        existing = fg.read()
-        if existing.empty:
-            return None
-        city_rows = existing[existing["city"] == CITY_NAME]
-        if city_rows.empty:
-            return None
-        return int(city_rows.sort_values("timestamp").iloc[-1]["us_aqi"])
-    except Exception as exc:
-        print(f"Could not read prior AQI (using 0 change rate): {exc}")
-        return None
-
-
 if __name__ == "__main__":
     print("Fetching AQI data from Open-Meteo...")
     raw_data = fetch_aqi_data()
 
     fg = connect_feature_group()
-    prev_aqi = _last_us_aqi(fg)
 
     print("Computing features...")
-    df = compute_features(raw_data, prev_aqi=prev_aqi)
+    # prev_aqi is not fetched to avoid reading the entire feature group,
+    # which caused the pipeline to exceed the 20-minute CI timeout.
+    df = compute_features(raw_data, prev_aqi=None)
     df["aqi_change_rate"] = df["aqi_change_rate"].astype("int64")
     print(df)
 

@@ -32,7 +32,7 @@ jobs:
   ingest-features:
     name: Ingest current AQI features
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
 
     # Read-only access to repository contents
     permissions:
