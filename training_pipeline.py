@@ -133,8 +133,19 @@ def save_model(model, model_name, metrics_report, project):
 
     best_metrics = metrics_report["models"][metrics_report["best_model"]]
     mr = project.get_model_registry()
+
+    # Delete old versions to avoid registry bloat (keeps only the latest)
+    try:
+        existing = mr.get_models("aqi_predictor")
+        for old in existing:
+            print(f"  Deleting old model version {old.version}...")
+            old.delete()
+    except Exception as exc:
+        print(f"  Could not clean old versions (continuing): {exc}")
+
     hw_model = mr.sklearn.create_model(
         name="aqi_predictor",
+        version=1,
         metrics={
             "rmse": best_metrics["rmse"],
             "r2": best_metrics["r2"],
