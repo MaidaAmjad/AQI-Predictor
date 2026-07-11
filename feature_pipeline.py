@@ -69,17 +69,23 @@ def connect_feature_group():
         project=HOPSWORKS_PROJECT_NAME,
         engine="python",  # skip Kafka/Spark init — much faster for small inserts
     )
+    print("Getting feature store...")
     fs = project.get_feature_store()
-    return fs.get_or_create_feature_group(
+    print("Getting or creating feature group...")
+    fg = fs.get_or_create_feature_group(
         name=FEATURE_GROUP_NAME,
         version=FEATURE_GROUP_VERSION,
         primary_key=["timestamp", "city"],
         description="AQI features for Lahore from Open-Meteo",
+        online_enabled=False,  # disable online store — avoids slow RonDB provisioning
     )
+    print("Feature group ready.")
+    return fg
 
 if __name__ == "__main__":
     print("Fetching AQI data from Open-Meteo...")
     raw_data = fetch_aqi_data()
+    print("AQI data fetched.")
 
     fg = connect_feature_group()
 
@@ -90,7 +96,7 @@ if __name__ == "__main__":
     df["aqi_change_rate"] = df["aqi_change_rate"].astype("int64")
     print(df)
 
-    print("Storing in Hopsworks...")
-    fg.insert(df)
+    print("Inserting into Hopsworks...")
+    fg.insert(df, write_options={"wait_for_job": False})
     print("Features stored successfully!")
     print("Done!")
