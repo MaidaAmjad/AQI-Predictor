@@ -134,14 +134,14 @@ def save_model(model, model_name, metrics_report, project):
     best_metrics = metrics_report["models"][metrics_report["best_model"]]
     mr = project.get_model_registry()
 
-    # Delete old versions to avoid registry bloat (keeps only the latest)
+    # Always save as version 1 — delete the existing v1 first if it exists
     try:
-        existing = mr.get_models("aqi_predictor")
-        for old in existing:
-            print(f"  Deleting old model version {old.version}...")
-            old.delete()
-    except Exception as exc:
-        print(f"  Could not clean old versions (continuing): {exc}")
+        old_v1 = mr.get_model("aqi_predictor", version=1)
+        print("Deleting existing model version 1...")
+        old_v1.delete()
+        print("Deleted.")
+    except Exception:
+        pass  # version 1 doesn't exist yet, that's fine
 
     hw_model = mr.sklearn.create_model(
         name="aqi_predictor",
@@ -157,6 +157,7 @@ def save_model(model, model_name, metrics_report, project):
             f"{metrics_report['best_display_name']} ({metrics_report['best_model']})"
         ),
     )
+    print("Uploading model files to Hopsworks Model Registry...")
     hw_model.save("model")
     print("Model saved to Hopsworks Model Registry!")
 
