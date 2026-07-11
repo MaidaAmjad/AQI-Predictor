@@ -67,6 +67,7 @@ def connect_feature_group():
         host="eu-west.cloud.hopsworks.ai",
         api_key_value=HOPSWORKS_API_KEY,
         project=HOPSWORKS_PROJECT_NAME,
+        engine="python",  # skip Kafka/Spark init — much faster for small inserts
     )
     fs = project.get_feature_store()
     return fs.get_or_create_feature_group(
@@ -90,6 +91,6 @@ if __name__ == "__main__":
     print(df)
 
     print("Storing in Hopsworks...")
-    fg.insert(df, write_options={"kafka_timeout": 60})
+    fg.insert(df)
     print("Features stored successfully!")
     print("Done!")
