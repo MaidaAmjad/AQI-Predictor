@@ -94,6 +94,16 @@ jobs:
           [ -n "${{ secrets.FEATURE_GROUP_VERSION }}" ] && export FEATURE_GROUP_VERSION="${{ secrets.FEATURE_GROUP_VERSION }}"
           python training_pipeline.py
 
+      - name: Upload trained model artifacts
+        if: always() && hashFiles('model/best_model.pkl') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model-${{ github.run_id }}
+          path: |
+            model/best_model.pkl
+            model/metrics.json
+          retention-days: 7
+
       # Optional: surface metrics summary in the Actions log (artifact not persisted on runner)
       - name: Print training metrics summary
         if: success() && hashFiles('model/metrics.json') != ''
