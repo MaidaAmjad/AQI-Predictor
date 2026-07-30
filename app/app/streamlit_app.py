@@ -900,42 +900,135 @@ def _read_json(path):
     return None
 
 
+REGISTRY_MODEL_NAMES = ("aqi_predictor", "aqi_predictor_v2")
+
+
+def _registry_model_versions(mr, registry_name: str):
+    try:
+        models = mr.get_models(registry_name) or []
+    except Exception:
+        return []
+    return sorted(
+        models,
+        key=lambda m: getattr(m, "version", 0) or 0,
+        reverse=True,
+    )
+
+
+def _load_model_from_dir(model_dir: str, metrics: dict | None):
+    best_file = os.path.join(model_dir, "best_model.pkl")
+    local_best = os.path.join(LOCAL_MODEL_DIR, "best_model.pkl")
+    if os.path.isfile(best_file):
+        return joblib.load(best_file)
+    if os.path.isfile(local_best):
+        return joblib.load(local_best)
+    if metrics and os.path.isfile(os.path.join(model_dir, f"{metrics['best_model']}.pkl")):
+        return joblib.load(os.path.join(model_dir, f"{metrics['best_model']}.pkl"))
+    if metrics and os.path.isfile(os.path.join(LOCAL_MODEL_DIR, f"{metrics['best_model']}.pkl")):
+        return joblib.load(os.path.join(LOCAL_MODEL_DIR, f"{metrics['best_model']}.pkl"))
+    fallback = os.path.join(model_dir, "random_forest.pkl")
+    if os.path.isfile(fallback):
+        return joblib.load(fallback)
+    raise FileNotFoundError(f"No model pickle found under {model_dir}")
+
+
+def _download_registry_model(mr, registry_name: str, version_hint: int | None):
+    """Try registry versions newest-first; Hopsworks defaults version=None to v1."""
+    candidates = []
+    seen_versions = set()
+
+    if version_hint is not None:
+        hinted = mr.get_model(registry_name, version=version_hint)
+        if hinted is not None:
+            candidates.append(hinted)
+            seen_versions.add(getattr(hinted, "version", None))
+
+    for model_meta in _registry_model_versions(mr, registry_name):
+        version = getattr(model_meta, "version", None)
+        if version in seen_versions:
+            continue
+        candidates.append(model_meta)
+        seen_versions.add(version)
+
+    if not candidates:
+        raise RuntimeError(f"No registered versions found for '{registry_name}'")
+
+    last_exc = None
+    for model_meta in candidates:
+        version = getattr(model_meta, "version", None)
+        try:
+            model_dir = model_meta.download()
+            metrics = _read_json(os.path.join(model_dir, "metrics.json"))
+            if metrics is None:
+                metrics = _read_json(os.path.join(LOCAL_MODEL_DIR, "metrics.json"))
+            model = _load_model_from_dir(model_dir, metrics)
+            if metrics is None:
+                metrics = {}
+            metrics["registry_version"] = version
+            metrics["registry_name"] = registry_name
+            metrics["load_source"] = "registry"
+            return model, metrics, model_dir, version
+        except Exception as exc:
+            last_exc = exc
+            print(
+                f"Registry download failed for {registry_name} v{version}: {exc}",
+                file=sys.stderr,
+            )
+    raise last_exc or RuntimeError(f"Could not download any version of '{registry_name}'")
+
+
+def _train_fallback_model(project):
+    from explainability import FEATURES, TARGET
+    from sklearn.ensemble import ExtraTreesRegressor
+
+    fs = project.get_feature_store()
+    fg = fs.get_feature_group(name="aqi_features", version=2)
+    df = fg.read().dropna()
+    if len(df) < 50:
+        raise RuntimeError("Not enough feature-store rows to train a fallback model.")
+
+    X = df[FEATURES]
+    y = df[TARGET]
+    model = ExtraTreesRegressor(n_estimators=100, random_state=42)
+    model.fit(X, y)
+    metrics = {
+        "best_model": "extra_trees",
+        "best_display_name": "Extra Trees (fallback)",
+        "load_source": "fallback",
+        "train_samples": len(X),
+        "models": {
+            "extra_trees": {
+                "display_name": "Extra Trees (fallback)",
+                "rmse": None,
+                "mae": None,
+                "r2": None,
+                "r2_pct": None,
+            }
+        },
+    }
+    return model, metrics, None, None
+
+
 @st.cache_resource(show_spinner=False, ttl=3600)
 def load_model_and_project():
     project = hopsworks.login(
         host="eu-west.cloud.hopsworks.ai",
         api_key_value=HOPSWORKS_API_KEY,
-        project=HOPSWORKS_PROJECT_NAME
+        project=HOPSWORKS_PROJECT_NAME,
     )
     mr = project.get_model_registry()
-    version = int(MODEL_VERSION) if MODEL_VERSION else None
-    model_hw = mr.get_model("aqi_predictor", version=version)
-    registry_version = getattr(model_hw, "version", version)
-    model_dir = model_hw.download()
+    version_hint = int(MODEL_VERSION) if MODEL_VERSION else None
+    registry_errors = []
 
-    metrics = _read_json(os.path.join(model_dir, "metrics.json"))
-    if metrics is None:
-        metrics = _read_json(os.path.join(LOCAL_MODEL_DIR, "metrics.json"))
+    for registry_name in REGISTRY_MODEL_NAMES:
+        hint = version_hint if registry_name == "aqi_predictor" else None
+        try:
+            return _download_registry_model(mr, registry_name, hint)
+        except Exception as exc:
+            registry_errors.append(f"{registry_name}: {exc}")
 
-    best_file = os.path.join(model_dir, "best_model.pkl")
-    local_best = os.path.join(LOCAL_MODEL_DIR, "best_model.pkl")
-    if os.path.isfile(best_file):
-        model = joblib.load(best_file)
-    elif os.path.isfile(local_best):
-        model = joblib.load(local_best)
-    elif metrics and os.path.isfile(os.path.join(model_dir, f"{metrics['best_model']}.pkl")):
-        model = joblib.load(os.path.join(model_dir, f"{metrics['best_model']}.pkl"))
-    elif metrics and os.path.isfile(os.path.join(LOCAL_MODEL_DIR, f"{metrics['best_model']}.pkl")):
-        model = joblib.load(os.path.join(LOCAL_MODEL_DIR, f"{metrics['best_model']}.pkl"))
-    else:
-        fallback = os.path.join(model_dir, "random_forest.pkl")
-        model = joblib.load(fallback)
-        if metrics is None:
-            metrics = _read_json(os.path.join(LOCAL_MODEL_DIR, "metrics.json"))
-
-    if metrics is not None and registry_version is not None:
-        metrics["registry_version"] = registry_version
-
+    model, metrics, model_dir, registry_version = _train_fallback_model(project)
+    metrics["registry_errors"] = registry_errors
     return model, project, metrics, model_dir, registry_version
 
 
@@ -1080,6 +1173,19 @@ with st.spinner("🌫️ Loading AQI data..."):
         st.error(f"Connection error: {e}")
         model_loaded = False
         st.stop()
+
+if model_metrics and model_metrics.get("load_source") == "fallback":
+    st.warning(
+        "Could not download a model from the Hopsworks Model Registry "
+        "(missing or broken registry files). Trained a temporary fallback model "
+        "from the feature store. Re-run the **Train Pipeline** GitHub Action after "
+        "fixing registry upload, then use **Refresh model & metrics** in the sidebar."
+    )
+elif model_metrics and model_metrics.get("registry_name") == "aqi_predictor_v2":
+    st.info(
+        "Loaded model **aqi_predictor_v2** from Hopsworks. "
+        "After the next successful train run, the app will prefer **aqi_predictor**."
+    )
 
 last_row = df.iloc[-1]
 current_aqi = int(current.get("us_aqi", last_row["us_aqi"]))

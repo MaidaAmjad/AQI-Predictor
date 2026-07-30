@@ -40,6 +40,8 @@ You cannot switch Python on a live app. Redeploy:
    LONGITUDE = "74.3587"
    ```
 
+   Do **not** set `MODEL_VERSION = "1"` unless that exact version exists in Hopsworks with uploaded model files. If the app shows **Path not found** for `aqi_predictor/1`, remove `MODEL_VERSION` from secrets or run a successful Train Pipeline.
+
 9. **Save** → **Deploy**.
 
 After reboot, logs should show **Python 3.12.x**, not 3.14.5.
