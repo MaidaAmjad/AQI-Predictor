@@ -1023,7 +1023,10 @@ def load_model_and_project():
     for registry_name in REGISTRY_MODEL_NAMES:
         hint = version_hint if registry_name == "aqi_predictor" else None
         try:
-            return _download_registry_model(mr, registry_name, hint)
+            model, metrics, model_dir, reg_ver = _download_registry_model(
+                mr, registry_name, hint
+            )
+            return model, project, metrics, model_dir, reg_ver
         except Exception as exc:
             registry_errors.append(f"{registry_name}: {exc}")
 
